@@ -1,5 +1,5 @@
 
-import { User, UserRole, Listing, ListingCategory, ListingStatus, TransactionType } from '../types';
+import { User, Listing, ListingCategory, ListingStatus, TransactionType, UserRole } from '../types';
 
 export const MOCK_USERS: User[] = [
     {
@@ -8,32 +8,43 @@ export const MOCK_USERS: User[] = [
         email: 'antonio@email.ao',
         role: UserRole.OWNER,
         isVerified: true,
-        avatar: 'https://picsum.photos/seed/u1/200',
+        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
         rating: 4.8,
         reviewCount: 12,
-        joinedAt: '2023-10-15'
+        joinedAt: '2023-01-15T10:00:00Z',
     },
     {
         id: 'u2',
-        name: 'Maria Santos',
+        name: 'Maria Gonçalves',
         email: 'maria@email.ao',
         role: UserRole.CLIENT,
         isVerified: false,
-        avatar: 'https://picsum.photos/seed/u2/200',
-        rating: 5.0,
-        reviewCount: 3,
-        joinedAt: '2024-01-20'
+        avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
+        rating: 0,
+        reviewCount: 0,
+        joinedAt: '2023-02-20T14:30:00Z',
     },
     {
-        id: 'u_admin',
-        name: 'Admin Central FACIL',
+        id: 'u3',
+        name: 'Imobiliária Luanda',
+        email: 'contacto@imoluanda.ao',
+        role: UserRole.OWNER,
+        isVerified: true,
+        avatar: 'https://ui-avatars.com/api/?name=Imo+Luanda&background=0D8ABC&color=fff',
+        rating: 4.5,
+        reviewCount: 45,
+        joinedAt: '2022-11-05T09:15:00Z',
+    },
+    {
+        id: 'admin',
+        name: 'Administrador FACIL',
         email: 'admin@facil.ao',
         role: UserRole.ADMIN,
         isVerified: true,
-        avatar: 'https://ui-avatars.com/api/?name=Admin+Facil&background=1d4ed8&color=fff',
+        avatar: 'https://ui-avatars.com/api/?name=Admin&background=000&color=fff',
         rating: 5.0,
         reviewCount: 0,
-        joinedAt: '2023-01-01'
+        joinedAt: '2022-01-01T00:00:00Z',
     }
 ];
 
@@ -41,70 +52,92 @@ export const MOCK_LISTINGS: Listing[] = [
     {
         id: 'l1',
         ownerId: 'u1',
-        title: 'Moradia T3 no Talatona',
-        description: 'Excelente casa moderna com quintal amplo e piscina em condomínio fechado. Pronta a entrar.',
-        price: 450000,
-        currency: 'AOA',
-        category: ListingCategory.HOUSE,
-        transactionType: TransactionType.RENT,
-        status: ListingStatus.AVAILABLE,
-        images: [
-            'https://picsum.photos/seed/house1/800/600',
-            'https://picsum.photos/seed/house2/800/600'
-        ],
-        location: {
-            city: 'Luanda',
-            neighborhood: 'Talatona',
-            coords: [-8.9167, 13.1833]
-        },
-        views: 1240,
-        createdAt: '2024-03-01T10:00:00Z',
-        features: ['Piscina', 'Segurança 24h', 'AC', 'Gerador']
-    },
-    {
-        id: 'l2',
-        ownerId: 'u1',
-        title: 'Toyota Hilux 2022',
-        description: 'Viatura em estado imaculável. Manutenção feita na marca. 45.000km rodados.',
-        price: 25000000,
-        currency: 'AOA',
-        category: ListingCategory.CAR,
-        transactionType: TransactionType.BUY,
-        status: ListingStatus.AVAILABLE,
-        images: [
-            'https://picsum.photos/seed/car1/800/600',
-            'https://picsum.photos/seed/car2/800/600'
-        ],
-        location: {
-            city: 'Luanda',
-            neighborhood: 'Viana',
-            coords: [-8.9, 13.3]
-        },
-        views: 3200,
-        createdAt: '2024-03-05T14:30:00Z',
-        features: ['Ar condicionado', '4x4', 'Diesel', 'Manual']
-    },
-    {
-        id: 'l3',
-        ownerId: 'u1',
-        title: 'Apartamento T2 - Marginal de Luanda',
-        description: 'Vista mar incrível. Mobilado e equipado com electrodomésticos de última geração.',
-        price: 1200000,
+        title: 'Apartamento T3 Moderno no Kilamba',
+        description: 'Excelente apartamento T3 na centralidade do Kilamba, bloco A, 3º andar. Com cozinha equipada e AC em todos os quartos.',
+        price: 150000,
         currency: 'AOA',
         category: ListingCategory.APARTMENT,
         transactionType: TransactionType.RENT,
         status: ListingStatus.AVAILABLE,
         images: [
-            'https://picsum.photos/seed/apt1/800/600',
-            'https://picsum.photos/seed/apt2/800/600'
+            'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?ixlib=rb-4.0.3&auto=format&fit=crop&w=2340&q=80',
+            'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?ixlib=rb-4.0.3&auto=format&fit=crop&w=2340&q=80',
+        ],
+        location: {
+            city: 'Luanda',
+            neighborhood: 'Kilamba',
+            coords: [-8.9964, 13.2678], // Coord aproximada Kilamba
+        },
+        views: 1240,
+        createdAt: '2023-05-10T10:00:00Z',
+        features: ['AC', 'Cozinha Equipada', 'Elevador', 'Segurança 24h'],
+        isFeatured: true,
+    },
+    {
+        id: 'l2',
+        ownerId: 'u1',
+        title: 'Vivenda V4 em Talatona',
+        description: 'Vivenda de luxo em condomínio fechado. Piscina privada, gerador, jardim e anexo.',
+        price: 250000000,
+        currency: 'AOA',
+        category: ListingCategory.HOUSE,
+        transactionType: TransactionType.BUY,
+        status: ListingStatus.AVAILABLE,
+        images: [
+            'https://images.unsplash.com/photo-1613977257363-707ba9348227?ixlib=rb-4.0.3&auto=format&fit=crop&w=2340&q=80',
+            'https://images.unsplash.com/photo-1580587771525-78b9dba3b91d?ixlib=rb-4.0.3&auto=format&fit=crop&w=2340&q=80',
+        ],
+        location: {
+            city: 'Luanda',
+            neighborhood: 'Talatona',
+            coords: [-8.9324, 13.1878],
+        },
+        views: 850,
+        createdAt: '2023-05-12T15:30:00Z',
+        features: ['Piscina', 'Gerador', 'Jardim', 'Garagem', 'Segurança 24h'],
+    },
+    {
+        id: 'l3',
+        ownerId: 'u3',
+        title: 'Escritório no Centro da Cidade',
+        description: 'Espaço comercial ideal para escritórios no centro de Luanda (Mutamba). 120m², 2 casas de banho e copa.',
+        price: 450000,
+        currency: 'AOA',
+        category: ListingCategory.SHOP,
+        transactionType: TransactionType.RENT,
+        status: ListingStatus.AVAILABLE,
+        images: [
+            'https://images.unsplash.com/photo-1497366216548-37526070297c?ixlib=rb-4.0.3&auto=format&fit=crop&w=2340&q=80',
         ],
         location: {
             city: 'Luanda',
             neighborhood: 'Ingombota',
-            coords: [-8.81, 13.23]
+            coords: [-8.8147, 13.2302],
         },
-        views: 850,
-        createdAt: '2024-03-10T09:15:00Z',
-        features: ['Vista Mar', 'Lugar de Garagem', 'Elevador']
+        views: 320,
+        createdAt: '2023-05-15T09:00:00Z',
+        features: ['AC Central', 'Estacionamento', 'Segurança'],
+    },
+    {
+        id: 'l4',
+        ownerId: 'u2',
+        title: 'Terreno no Benfica',
+        description: 'Terreno de 20x30m no Benfica, zona urbanizada, com documentos.',
+        price: 15000000,
+        currency: 'AOA',
+        category: ListingCategory.LAND,
+        transactionType: TransactionType.BUY,
+        status: ListingStatus.AVAILABLE,
+        images: [
+            'https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-4.0.3&auto=format&fit=crop&w=2664&q=80',
+        ],
+        location: {
+            city: 'Luanda',
+            neighborhood: 'Benfica',
+            coords: [-8.9567, 13.1456],
+        },
+        views: 560,
+        createdAt: '2023-05-18T11:20:00Z',
+        features: ['Vedado', 'Água', 'Luz'],
     }
 ];

@@ -9,7 +9,13 @@ const AuthPage: React.FC = () => {
     const location = useLocation();
     const { actions, state } = useApp();
     const [isLogin, setIsLogin] = useState(true);
-    const [isLoading, setIsLoading] = useState(false);
+
+    // Form State
+    const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [role, setRole] = useState<UserRole>(UserRole.CLIENT);
+    const [error, setError] = useState<string | null>(null);
 
     const from = (location.state as any)?.from?.pathname || '/';
 
@@ -20,19 +26,24 @@ const AuthPage: React.FC = () => {
         }
     }, [state.user, navigate, from]);
 
-    const handleLogin = async (role: UserRole) => {
-        setIsLoading(true);
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError(null);
 
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        actions.login(role);
-
-        // Navigate based on role
-        if (role === UserRole.ADMIN) {
-            navigate('/admin');
-        } else {
-            navigate(from, { replace: true });
+        try {
+            if (isLogin) {
+                await actions.login(email, password);
+                navigate(from, { replace: true });
+            } else {
+                await actions.register(name, email, password, role);
+                // After register, switch to login or show success
+                // actions.register might trigger a notification
+                setIsLogin(true);
+                setError('Registo concluído! Por favor faça login.');
+            }
+        } catch (err: any) {
+            console.error(err);
+            setError(err.message || 'Ocorreu um erro. Tente novamente.');
         }
     };
 
@@ -49,53 +60,96 @@ const AuthPage: React.FC = () => {
                         </p>
                     </div>
 
-                    {/* Demo Login Buttons */}
-                    <div className="space-y-4">
-                        <p className="text-center text-xs text-gray-400 uppercase tracking-wider font-bold mb-4">
-                            Demonstração - Escolha um perfil
-                        </p>
+                    {error && (
+                        <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg text-center font-medium">
+                            {error}
+                        </div>
+                    )}
 
-                        <button
-                            onClick={() => handleLogin(UserRole.CLIENT)}
-                            disabled={isLoading}
-                            className="group relative w-full flex justify-center py-4 px-4 text-sm font-bold rounded-2xl text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all shadow-lg hover:shadow-blue-200 disabled:opacity-50"
-                        >
-                            <span className="mr-2">👤</span>
-                            Entrar como Comprador/Arrendatário
-                        </button>
-
-                        <button
-                            onClick={() => handleLogin(UserRole.OWNER)}
-                            disabled={isLoading}
-                            className="group relative w-full flex justify-center py-4 px-4 border-2 border-blue-600 text-sm font-bold rounded-2xl text-blue-600 bg-white hover:bg-blue-50 transition-all disabled:opacity-50"
-                        >
-                            <span className="mr-2">🏠</span>
-                            Entrar como Proprietário
-                        </button>
-
-                        <div className="relative py-4">
-                            <div className="absolute inset-0 flex items-center">
-                                <div className="w-full border-t border-gray-200"></div>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        {!isLogin && (
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Nome Completo</label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+                                    placeholder="Seu nome"
+                                />
                             </div>
-                            <div className="relative flex justify-center text-sm">
-                                <span className="px-4 bg-white text-gray-400 font-medium">Administração</span>
-                            </div>
+                        )}
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                            <input
+                                type="email"
+                                required
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+                                placeholder="seu@email.com"
+                            />
                         </div>
 
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                            <input
+                                type="password"
+                                required
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                minLength={6}
+                                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+                                placeholder="********"
+                            />
+                        </div>
+
+                        {!isLogin && (
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Eu sou...</label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setRole(UserRole.CLIENT)}
+                                        className={`py-3 px-4 rounded-xl text-sm font-bold border-2 transition-all ${role === UserRole.CLIENT
+                                                ? 'border-blue-600 bg-blue-50 text-blue-700'
+                                                : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                                            }`}
+                                    >
+                                        Cliente
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setRole(UserRole.OWNER)}
+                                        className={`py-3 px-4 rounded-xl text-sm font-bold border-2 transition-all ${role === UserRole.OWNER
+                                                ? 'border-blue-600 bg-blue-50 text-blue-700'
+                                                : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                                            }`}
+                                    >
+                                        Proprietário
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
                         <button
-                            onClick={() => handleLogin(UserRole.ADMIN)}
-                            disabled={isLoading}
-                            className="w-full flex justify-center items-center py-3 px-4 text-xs font-bold text-gray-500 hover:text-blue-600 uppercase tracking-widest transition disabled:opacity-50"
+                            type="submit"
+                            disabled={state.isLoading}
+                            className="w-full py-4 text-white font-bold rounded-2xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-blue-200 disabled:opacity-50 mt-6"
                         >
-                            <span className="mr-2">⚙️</span>
-                            Acesso Administrativo
+                            {state.isLoading ? 'A processar...' : (isLogin ? 'Entrar' : 'Criar Conta')}
                         </button>
-                    </div>
+                    </form>
 
                     {/* Toggle */}
                     <div className="text-center mt-8 pt-6 border-t border-gray-100">
                         <button
-                            onClick={() => setIsLogin(!isLogin)}
+                            onClick={() => {
+                                setIsLogin(!isLogin);
+                                setError(null);
+                            }}
                             className="text-sm font-medium text-blue-600 hover:text-blue-700"
                         >
                             {isLogin ? 'Ainda não tem conta? Registe-se' : 'Já tem conta? Inicie sessão'}

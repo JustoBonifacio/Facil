@@ -1,12 +1,12 @@
 
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
-import { User, Listing, Message, Notification, UserRole, ListingStatus } from '../types';
-import { MOCK_USERS, MOCK_LISTINGS } from '../data/mockData';
+import { User, Listing, Message, Notification, ListingStatus, SearchFilters, UserRole } from '../types';
+import { authService, listingsService, usersService, messagesService } from '../services/api';
 
-// ============ STATE TYPES ============
+// ============ STATE DEFINITION ============
 interface AppState {
     user: User | null;
-    users: User[];
+    users: User[]; // Cache of known users
     listings: Listing[];
     messages: Message[];
     notifications: Notification[];
@@ -15,8 +15,19 @@ interface AppState {
     error: string | null;
 }
 
-// ============ ACTION TYPES ============
-type AppAction =
+const initialState: AppState = {
+    user: null,
+    users: [],
+    listings: [],
+    messages: [],
+    notifications: [],
+    bannerUrl: 'https://images.unsplash.com/photo-1582407947304-fd86f028f716?q=80&w=2000&auto=format&fit=crop', // Default Luanda Skyline
+    isLoading: false,
+    error: null,
+};
+
+// ============ ACTIONS DEFINITION ============
+type Action =
     | { type: 'SET_USER'; payload: User | null }
     | { type: 'SET_USERS'; payload: User[] }
     | { type: 'SET_LISTINGS'; payload: Listing[] }
@@ -26,27 +37,15 @@ type AppAction =
     | { type: 'SET_MESSAGES'; payload: Message[] }
     | { type: 'ADD_MESSAGE'; payload: Message }
     | { type: 'ADD_NOTIFICATION'; payload: Notification }
-    | { type: 'MARK_NOTIFICATION_READ'; payload: string }
-    | { type: 'UPDATE_USER'; payload: User }
+    | { type: 'MARK_NOTIFICATIONS_READ' }
     | { type: 'SET_BANNER'; payload: string }
     | { type: 'SET_LOADING'; payload: boolean }
     | { type: 'SET_ERROR'; payload: string | null }
+    | { type: 'UPDATE_USER'; payload: User }
     | { type: 'HYDRATE'; payload: Partial<AppState> };
 
-// ============ INITIAL STATE ============
-const initialState: AppState = {
-    user: null,
-    users: MOCK_USERS,
-    listings: MOCK_LISTINGS,
-    messages: [],
-    notifications: [],
-    bannerUrl: 'https://images.unsplash.com/photo-1574362848149-11496d93a7c7?auto=format&fit=crop&q=80&w=1920',
-    isLoading: false,
-    error: null,
-};
-
 // ============ REDUCER ============
-function appReducer(state: AppState, action: AppAction): AppState {
+function appReducer(state: AppState, action: Action): AppState {
     switch (action.type) {
         case 'SET_USER':
             return { ...state, user: action.payload };
@@ -72,23 +71,23 @@ function appReducer(state: AppState, action: AppAction): AppState {
             return { ...state, messages: [...state.messages, action.payload] };
         case 'ADD_NOTIFICATION':
             return { ...state, notifications: [action.payload, ...state.notifications] };
-        case 'MARK_NOTIFICATION_READ':
+        case 'MARK_NOTIFICATIONS_READ':
             return {
                 ...state,
-                notifications: state.notifications.map(n =>
-                    n.id === action.payload ? { ...n, read: true } : n
-                ),
+                notifications: state.notifications.map(n => ({ ...n, read: true })),
             };
-        case 'UPDATE_USER':
-            const updatedUsers = state.users.map(u => u.id === action.payload.id ? action.payload : u);
-            const updatedCurrentUser = state.user?.id === action.payload.id ? action.payload : state.user;
-            return { ...state, users: updatedUsers, user: updatedCurrentUser };
         case 'SET_BANNER':
             return { ...state, bannerUrl: action.payload };
         case 'SET_LOADING':
             return { ...state, isLoading: action.payload };
         case 'SET_ERROR':
             return { ...state, error: action.payload };
+        case 'UPDATE_USER':
+            return {
+                ...state,
+                users: state.users.map(u => u.id === action.payload.id ? action.payload : u),
+                user: state.user && state.user.id === action.payload.id ? action.payload : state.user
+            };
         case 'HYDRATE':
             return { ...state, ...action.payload };
         default:
@@ -99,16 +98,17 @@ function appReducer(state: AppState, action: AppAction): AppState {
 // ============ CONTEXT ============
 interface AppContextType {
     state: AppState;
-    dispatch: React.Dispatch<AppAction>;
+    dispatch: React.Dispatch<Action>;
     actions: {
-        login: (role: UserRole) => void;
-        logout: () => void;
-        addListing: (listing: Listing) => void;
-        updateListing: (listing: Listing) => void;
-        deleteListing: (id: string) => void;
-        sendMessage: (listingId: string, receiverId: string, content: string) => void;
+        login: (role: UserRole) => Promise<void>;
+        logout: () => Promise<void>;
+        addListing: (listing: Listing) => Promise<void>;
+        updateListing: (listing: Listing) => Promise<void>;
+        deleteListing: (id: string) => Promise<void>;
+        sendMessage: (listingId: string, receiverId: string, content: string) => Promise<void>;
         verifyUser: (userId: string) => void;
         moderateListing: (listingId: string, status: ListingStatus) => void;
+        fetchListings: (filters?: SearchFilters) => Promise<void>;
     };
 }
 
@@ -118,142 +118,198 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export function AppProvider({ children }: { children: ReactNode }) {
     const [state, dispatch] = useReducer(appReducer, initialState);
 
-    // Hydrate from localStorage on mount
+    // Initial Data Load
     useEffect(() => {
-        const savedUser = localStorage.getItem('facil_user');
-        const savedMessages = localStorage.getItem('facil_messages');
-        const savedBanner = localStorage.getItem('facil_banner');
+        const initApp = async () => {
+            dispatch({ type: 'SET_LOADING', payload: true });
+            try {
+                // 1. Listings (Static load initially)
+                const listings = await listingsService.getAll();
+                dispatch({ type: 'SET_LISTINGS', payload: listings });
 
-        const hydration: Partial<AppState> = {};
+                // 2. Users (Cache)
+                const users = await usersService.getAll();
+                dispatch({ type: 'SET_USERS', payload: users });
 
-        if (savedUser) {
-            const parsedUser = JSON.parse(savedUser);
-            const syncedUser = state.users.find(u => u.id === parsedUser.id) || parsedUser;
-            hydration.user = syncedUser;
-        }
-        if (savedMessages) {
-            hydration.messages = JSON.parse(savedMessages);
-        }
-        if (savedBanner) {
-            hydration.bannerUrl = savedBanner;
-        }
+                // 3. User Session (Local Storage for Mock / Persistance)
+                const savedUser = localStorage.getItem('facil_user');
+                if (savedUser) {
+                    const parsedUser = JSON.parse(savedUser);
+                    dispatch({ type: 'SET_USER', payload: parsedUser });
 
-        if (Object.keys(hydration).length > 0) {
-            dispatch({ type: 'HYDRATE', payload: hydration });
-        }
+                    // If user exists, fetch their messages
+                    try {
+                        const msgs = await messagesService.getByUser(parsedUser.id);
+                        dispatch({ type: 'SET_MESSAGES', payload: msgs });
+                    } catch (e) { console.error('Error fetching messages', e); }
+                }
+
+            } catch (err) {
+                console.error('Failed to initialize app', err);
+                dispatch({ type: 'SET_ERROR', payload: 'Falha ao carregar dados iniciais' });
+            } finally {
+                dispatch({ type: 'SET_LOADING', payload: false });
+            }
+        };
+
+        initApp();
     }, []);
 
-    // Persist messages to localStorage
-    useEffect(() => {
-        localStorage.setItem('facil_messages', JSON.stringify(state.messages));
-    }, [state.messages]);
-
-    // Persist banner to localStorage
-    useEffect(() => {
-        localStorage.setItem('facil_banner', state.bannerUrl);
-    }, [state.bannerUrl]);
-
-    // ============ ACTIONS ============
+    // Actions Wrapper
     const actions = {
-        login: (role: UserRole) => {
-            let selectedUser: User | undefined;
-            if (role === UserRole.ADMIN) {
-                selectedUser = state.users.find(u => u.role === UserRole.ADMIN);
-            } else if (role === UserRole.OWNER) {
-                selectedUser = state.users[0];
-            } else {
-                selectedUser = state.users[1];
-            }
+        login: async (role: UserRole) => {
+            try {
+                dispatch({ type: 'SET_LOADING', payload: true });
 
-            if (selectedUser) {
-                dispatch({ type: 'SET_USER', payload: selectedUser });
-                localStorage.setItem('facil_user', JSON.stringify(selectedUser));
+                // Mock logic for compatibility with current UI that sends Role
+                let email = '';
+                if (role === 'ADMIN') email = 'admin@facil.ao';
+                else if (role === 'OWNER') email = 'antonio@email.ao';
+                else email = 'maria@email.ao';
+
+                const { user } = await authService.login(email, 'password');
+
+                dispatch({ type: 'SET_USER', payload: user });
+                localStorage.setItem('facil_user', JSON.stringify(user));
+
+                // Fetch User Messages
+                const msgs = await messagesService.getByUser(user.id);
+                dispatch({ type: 'SET_MESSAGES', payload: msgs });
+
+            } catch (error) {
+                console.error(error);
+                dispatch({ type: 'SET_ERROR', payload: 'Login falhou' });
+            } finally {
+                dispatch({ type: 'SET_LOADING', payload: false });
             }
         },
 
-        logout: () => {
+        logout: async () => {
+            await authService.logout();
             dispatch({ type: 'SET_USER', payload: null });
             localStorage.removeItem('facil_user');
         },
 
-        addListing: (listing: Listing) => {
-            dispatch({ type: 'ADD_LISTING', payload: listing });
+        addListing: async (listing: Listing) => {
+            try {
+                dispatch({ type: 'SET_LOADING', payload: true });
+                // Services expects partial, but we have full Listing object from UI form
+                // We'll strip what we don't need or let service handle it (service implementation handles inserts)
 
-            if (state.user) {
-                const notification: Notification = {
-                    id: Date.now().toString(),
-                    userId: state.user.id,
-                    title: 'Anúncio Publicado! 🚀',
-                    message: `O seu anúncio "${listing.title}" já está visível para todo o país.`,
-                    type: 'SUCCESS',
-                    read: false,
-                    createdAt: new Date().toISOString(),
-                };
-                dispatch({ type: 'ADD_NOTIFICATION', payload: notification });
+                const { id, createdAt, views, ...rest } = listing;
+
+                const newListing = await listingsService.create({
+                    ownerId: rest.ownerId,
+                    title: rest.title,
+                    description: rest.description,
+                    price: rest.price,
+                    currency: 'AOA',
+                    category: rest.category,
+                    transactionType: rest.transactionType,
+                    images: rest.images,
+                    location: rest.location,
+                    features: rest.features,
+                    status: rest.status,
+                    isFeatured: rest.isFeatured || false
+                });
+
+                dispatch({ type: 'ADD_LISTING', payload: newListing });
+
+                if (state.user) {
+                    dispatch({
+                        type: 'ADD_NOTIFICATION', payload: {
+                            id: Date.now().toString(),
+                            userId: state.user.id,
+                            title: 'Anúncio Publicado! 🚀',
+                            message: `O seu anúncio "${listing.title}" já está visível para todo o país.`,
+                            type: 'SUCCESS',
+                            read: false,
+                            createdAt: new Date().toISOString(),
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error(error);
+                dispatch({ type: 'SET_ERROR', payload: 'Erro ao criar anúncio' });
+            } finally {
+                dispatch({ type: 'SET_LOADING', payload: false });
             }
         },
 
-        updateListing: (listing: Listing) => {
+        updateListing: async (listing: Listing) => {
+            // Placeholder for future implementation
             dispatch({ type: 'UPDATE_LISTING', payload: listing });
         },
 
-        deleteListing: (id: string) => {
+        deleteListing: async (id: string) => {
+            // Placeholder
             dispatch({ type: 'DELETE_LISTING', payload: id });
         },
 
-        sendMessage: (listingId: string, receiverId: string, content: string) => {
+        sendMessage: async (listingId: string, receiverId: string, content: string) => {
             if (!state.user) return;
 
-            const newMessage: Message = {
-                id: Date.now().toString(),
-                listingId,
-                senderId: state.user.id,
-                receiverId,
-                content,
-                timestamp: new Date().toISOString(),
-            };
-            dispatch({ type: 'ADD_MESSAGE', payload: newMessage });
+            try {
+                const newMessage = await messagesService.send({
+                    listingId,
+                    senderId: state.user.id,
+                    receiverId,
+                    content,
+                    isRead: false
+                });
 
-            // Auto-reply simulation
-            if (receiverId === 'u1') {
-                setTimeout(() => {
-                    const reply: Message = {
-                        id: (Date.now() + 1).toString(),
-                        listingId,
-                        senderId: 'u1',
-                        receiverId: state.user!.id,
-                        content: 'Olá! Recebi a sua mensagem sobre este item. Quando gostaria de agendar uma visita?',
-                        timestamp: new Date().toISOString(),
-                    };
-                    dispatch({ type: 'ADD_MESSAGE', payload: reply });
-                }, 1500);
+                dispatch({ type: 'ADD_MESSAGE', payload: newMessage });
+
+                // Mock Auto-reply logic (keep for demo)
+                if (receiverId === 'u1') { // Assuming 'u1' is some owner
+                    setTimeout(() => {
+                        dispatch({
+                            type: 'ADD_MESSAGE', payload: {
+                                id: (Date.now() + 1).toString(),
+                                listingId,
+                                senderId: receiverId,
+                                receiverId: state.user!.id,
+                                content: 'Olá! Recebi a sua mensagem. (Resposta automática de demonstração)',
+                                timestamp: new Date().toISOString(),
+                                isRead: false
+                            }
+                        });
+                    }, 1000);
+                }
+
+            } catch (e) {
+                console.error(e);
             }
         },
 
         verifyUser: (userId: string) => {
+            usersService.verify(userId);
+            // Optimistic update
             const targetUser = state.users.find(u => u.id === userId);
             if (targetUser) {
                 dispatch({ type: 'UPDATE_USER', payload: { ...targetUser, isVerified: true } });
-
-                const notification: Notification = {
-                    id: Date.now().toString(),
-                    userId,
-                    title: 'Identidade Verificada! ✅',
-                    message: 'A sua conta foi validada com sucesso pela nossa equipa administrativa.',
-                    type: 'SUCCESS',
-                    read: false,
-                    createdAt: new Date().toISOString(),
-                };
-                dispatch({ type: 'ADD_NOTIFICATION', payload: notification });
             }
         },
 
         moderateListing: (listingId: string, status: ListingStatus) => {
+            // Optimistic update
             const listing = state.listings.find(l => l.id === listingId);
             if (listing) {
                 dispatch({ type: 'UPDATE_LISTING', payload: { ...listing, status } });
             }
         },
+
+        fetchListings: async (filters?: SearchFilters) => {
+            try {
+                dispatch({ type: 'SET_LOADING', payload: true });
+                const listings = await listingsService.getAll(filters);
+                dispatch({ type: 'SET_LISTINGS', payload: listings });
+            } catch (e) {
+                console.error(e);
+            } finally {
+                dispatch({ type: 'SET_LOADING', payload: false });
+            }
+        }
     };
 
     return (
@@ -270,14 +326,4 @@ export function useApp() {
         throw new Error('useApp must be used within an AppProvider');
     }
     return context;
-}
-
-export function useUser() {
-    const { state } = useApp();
-    return state.user;
-}
-
-export function useListings() {
-    const { state } = useApp();
-    return state.listings;
 }
