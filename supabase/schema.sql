@@ -45,6 +45,9 @@ CREATE TABLE IF NOT EXISTS profiles (
   email TEXT UNIQUE NOT NULL,
   phone TEXT,
   role user_role DEFAULT 'CLIENT',
+  nif TEXT, -- Para proprietários/empresas
+  company_name TEXT, -- Se for agência/empresa
+  address TEXT, -- Localização do escritório
   is_verified BOOLEAN DEFAULT FALSE,
   avatar_url TEXT,
   rating NUMERIC(2, 1) DEFAULT 0,
@@ -193,8 +196,17 @@ CREATE TRIGGER update_listings_updated_at
 CREATE OR REPLACE FUNCTION public.handle_new_user() 
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, email, name, role)
-  VALUES (new.id, new.email, new.raw_user_meta_data->>'name', (new.raw_user_meta_data->>'role')::user_role);
+  INSERT INTO public.profiles (id, email, name, role, phone, nif, company_name, address)
+  VALUES (
+    new.id, 
+    new.email, 
+    new.raw_user_meta_data->>'name', 
+    (new.raw_user_meta_data->>'role')::user_role,
+    new.raw_user_meta_data->>'phone',
+    new.raw_user_meta_data->>'nif',
+    new.raw_user_meta_data->>'company_name',
+    new.raw_user_meta_data->>'address'
+  );
   RETURN new;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

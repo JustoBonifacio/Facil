@@ -274,7 +274,16 @@ export const authService = {
         await supabase.auth.signOut();
     },
 
-    async register(data: { name: string; email: string; password: string; role: string }): Promise<User> {
+    async register(data: {
+        name: string;
+        email: string;
+        password: string;
+        role: string;
+        phone?: string;
+        nif?: string;
+        companyName?: string;
+        address?: string;
+    }): Promise<User> {
         if (USE_MOCK) {
             await delay(SIMULATED_DELAY);
             return {
@@ -282,6 +291,10 @@ export const authService = {
                 name: data.name,
                 email: data.email,
                 role: data.role as any,
+                phone: data.phone,
+                nif: data.nif,
+                companyName: data.companyName,
+                address: data.address,
                 isVerified: false,
                 avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=1d4ed8&color=fff`,
                 rating: 0,
@@ -296,7 +309,11 @@ export const authService = {
             options: {
                 data: {
                     name: data.name,
-                    role: data.role
+                    role: data.role,
+                    phone: data.phone,
+                    nif: data.nif,
+                    company_name: data.companyName, // Snake case for DB trigger
+                    address: data.address
                 }
             }
         });

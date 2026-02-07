@@ -39,6 +39,9 @@ export interface User {
     reviewCount: number;
     joinedAt?: string;
     bio?: string;
+    nif?: string;
+    companyName?: string;
+    address?: string;
 }
 
 export interface Notification {

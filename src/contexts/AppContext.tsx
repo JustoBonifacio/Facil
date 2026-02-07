@@ -236,6 +236,35 @@ export function AppProvider({ children }: { children: ReactNode }) {
             }
         },
 
+        register: async (name, email, password, role, extraData) => {
+            try {
+                dispatch({ type: 'SET_LOADING', payload: true });
+                const user = await authService.register({
+                    name,
+                    email,
+                    password,
+                    role,
+                    ...extraData
+                });
+                dispatch({
+                    type: 'ADD_NOTIFICATION', payload: {
+                        id: Date.now().toString(),
+                        userId: 'system',
+                        title: 'Conta Criada!',
+                        message: 'Verifique seu email para confirmar a conta (se necessário) ou faça login.',
+                        type: 'SUCCESS',
+                        read: false,
+                        createdAt: new Date().toISOString()
+                    }
+                });
+            } catch (error) {
+                console.error(error);
+                dispatch({ type: 'SET_ERROR', payload: 'Falha no registo' });
+            } finally {
+                dispatch({ type: 'SET_LOADING', payload: false });
+            }
+        },
+
         updateListing: async (listing: Listing) => {
             // Placeholder for future implementation
             dispatch({ type: 'UPDATE_LISTING', payload: listing });
