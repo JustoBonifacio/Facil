@@ -1,0 +1,8 @@
+{
+  "name": "FACIL - Marketplace Angola",
+  "description": "A professional national marketplace for individual users in Angola to rent or buy real estate and vehicles. Features identity verification, digital contracts, and secure communication.",
+  "requestFramePermissions": [
+    "camera",
+    "geolocation"
+  ]
+}
