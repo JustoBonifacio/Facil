@@ -9,7 +9,10 @@ if (!supabaseUrl || !supabaseAnonKey) {
     console.warn('⚠️ Supabase URL or Anon Key is missing. Check your environment variables.');
 }
 
-export const supabase = createClient<Database>(
-    supabaseUrl || '',
-    supabaseAnonKey || ''
-);
+
+// Fallback to dummy values to prevent createClient from throwing error on initialization
+// This is safe because api.ts checks USE_MOCK before using this client instance
+const url = supabaseUrl || 'https://placeholder.supabase.co';
+const key = supabaseAnonKey || 'placeholder-key';
+
+export const supabase = createClient<Database>(url, key);

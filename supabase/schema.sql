@@ -4,18 +4,42 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "postgis"; -- For geospatial queries
 
 -- ==========================================
--- ENUMS
+-- ENUMS (Idempotent Creation)
 -- ==========================================
-CREATE TYPE user_role AS ENUM ('OWNER', 'CLIENT', 'ADMIN');
-CREATE TYPE listing_category AS ENUM ('HOUSE', 'APARTMENT', 'LAND', 'SHOP', 'WAREHOUSE', 'CAR');
-CREATE TYPE transaction_type AS ENUM ('RENT', 'BUY');
-CREATE TYPE listing_status AS ENUM ('AVAILABLE', 'RENTED', 'SOLD', 'PAUSED', 'PENDING_REVIEW');
-CREATE TYPE notification_type AS ENUM ('INFO', 'SUCCESS', 'WARNING', 'ERROR');
+DO $$ BEGIN
+    CREATE TYPE user_role AS ENUM ('OWNER', 'CLIENT', 'ADMIN');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE listing_category AS ENUM ('HOUSE', 'APARTMENT', 'LAND', 'SHOP', 'WAREHOUSE', 'CAR');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE transaction_type AS ENUM ('RENT', 'BUY');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE listing_status AS ENUM ('AVAILABLE', 'RENTED', 'SOLD', 'PAUSED', 'PENDING_REVIEW');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE notification_type AS ENUM ('INFO', 'SUCCESS', 'WARNING', 'ERROR');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 -- ==========================================
 -- PROFILES (Public user data)
 -- ==========================================
-CREATE TABLE profiles (
+CREATE TABLE IF NOT EXISTS profiles (
   id UUID REFERENCES auth.users(id) PRIMARY KEY,
   name TEXT NOT NULL,
   email TEXT UNIQUE NOT NULL,
@@ -34,19 +58,22 @@ CREATE TABLE profiles (
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
 -- Policies
+DROP POLICY IF EXISTS "Public profiles are viewable by everyone" ON profiles;
 CREATE POLICY "Public profiles are viewable by everyone" 
   ON profiles FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Users can insert their own profile" ON profiles;
 CREATE POLICY "Users can insert their own profile" 
   ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
 CREATE POLICY "Users can update own profile" 
   ON profiles FOR UPDATE USING (auth.uid() = id);
 
 -- ==========================================
 -- LISTINGS
 -- ==========================================
-CREATE TABLE listings (
+CREATE TABLE IF NOT EXISTS listings (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   owner_id UUID REFERENCES profiles(id) NOT NULL,
   title TEXT NOT NULL,
@@ -73,26 +100,29 @@ CREATE TABLE listings (
 );
 
 -- Index for search performance
-CREATE INDEX listings_location_idx ON listings(city, neighborhood);
-CREATE INDEX listings_category_idx ON listings(category);
-CREATE INDEX listings_price_idx ON listings(price);
+CREATE INDEX IF NOT EXISTS listings_location_idx ON listings(city, neighborhood);
+CREATE INDEX IF NOT EXISTS listings_category_idx ON listings(category);
+CREATE INDEX IF NOT EXISTS listings_price_idx ON listings(price);
 
 -- RLS
 ALTER TABLE listings ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Listings are viewable by everyone" ON listings;
 CREATE POLICY "Listings are viewable by everyone" 
   ON listings FOR SELECT USING (status = 'AVAILABLE' OR auth.uid() = owner_id OR (SELECT role FROM profiles WHERE id = auth.uid()) = 'ADMIN');
 
+DROP POLICY IF EXISTS "Owners can insert listings" ON listings;
 CREATE POLICY "Owners can insert listings" 
   ON listings FOR INSERT WITH CHECK (auth.uid() = owner_id);
 
+DROP POLICY IF EXISTS "Owners can update own listings" ON listings;
 CREATE POLICY "Owners can update own listings" 
   ON listings FOR UPDATE USING (auth.uid() = owner_id);
 
 -- ==========================================
 -- MESSAGES
 -- ==========================================
-CREATE TABLE messages (
+CREATE TABLE IF NOT EXISTS messages (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   listing_id UUID REFERENCES listings(id),
   sender_id UUID REFERENCES profiles(id) NOT NULL,
@@ -105,16 +135,18 @@ CREATE TABLE messages (
 -- RLS
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can see their own messages" ON messages;
 CREATE POLICY "Users can see their own messages" 
   ON messages FOR SELECT USING (auth.uid() = sender_id OR auth.uid() = receiver_id);
 
+DROP POLICY IF EXISTS "Users can send messages" ON messages;
 CREATE POLICY "Users can send messages" 
   ON messages FOR INSERT WITH CHECK (auth.uid() = sender_id);
 
 -- ==========================================
 -- NOTIFICATIONS
 -- ==========================================
-CREATE TABLE notifications (
+CREATE TABLE IF NOT EXISTS notifications (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   user_id UUID REFERENCES profiles(id) NOT NULL,
   title TEXT NOT NULL,
@@ -128,6 +160,7 @@ CREATE TABLE notifications (
 -- RLS
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can see own notifications" ON notifications;
 CREATE POLICY "Users can see own notifications" 
   ON notifications FOR SELECT USING (auth.uid() = user_id);
 
@@ -144,11 +177,13 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
+DROP TRIGGER IF EXISTS update_profiles_updated_at ON profiles;
 CREATE TRIGGER update_profiles_updated_at
     BEFORE UPDATE ON profiles
     FOR EACH ROW
     EXECUTE PROCEDURE update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_listings_updated_at ON listings;
 CREATE TRIGGER update_listings_updated_at
     BEFORE UPDATE ON listings
     FOR EACH ROW
@@ -164,6 +199,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
