@@ -2,6 +2,7 @@
 import React from 'react';
 import { User, Notification, Message } from '../../types';
 import { useApp } from '../../contexts/AppContext';
+import { USE_MOCK } from '../../services/api';
 
 interface NavbarProps {
     onNavigate: (page: string) => void;
@@ -15,8 +16,13 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentPage }) => {
     const unreadNotifications = notifications.filter(n => !n.read && n.userId === user?.id).length;
 
     return (
-        <nav className="bg-white border-b sticky top-0 z-50 shadow-sm">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <nav className="bg-white border-b sticky top-0 z-50 shadow-sm flex flex-col">
+            {USE_MOCK && (
+                <div className="bg-yellow-100 text-yellow-800 text-[10px] uppercase font-bold text-center py-1 border-b border-yellow-200">
+                    ⚠️ Modo Demonstração (Sem Base de Dados) — Configure .env para persistir dados
+                </div>
+            )}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
                 <div className="flex justify-between h-16">
                     {/* Logo */}
                     <div className="flex items-center">
@@ -133,8 +139,8 @@ const NavLink: React.FC<NavLinkProps> = ({ children, active, onClick }) => (
     <button
         onClick={onClick}
         className={`px-4 py-2 text-sm font-medium rounded-lg transition ${active
-                ? 'bg-blue-50 text-blue-700'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+            ? 'bg-blue-50 text-blue-700'
+            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
             }`}
     >
         {children}

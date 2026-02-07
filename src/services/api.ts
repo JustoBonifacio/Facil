@@ -4,7 +4,7 @@ import { Listing, User, Message, SearchFilters, UserRole } from '../types';
 import { Database } from '../types/database.types';
 import { MOCK_LISTINGS, MOCK_USERS } from '../data/mockData';
 
-const USE_MOCK = !import.meta.env.VITE_SUPABASE_URL ||
+export const USE_MOCK = !import.meta.env.VITE_SUPABASE_URL ||
     import.meta.env.VITE_SUPABASE_URL.includes('YOUR_SUPABASE') ||
     import.meta.env.VITE_USE_MOCK === 'true';
 
