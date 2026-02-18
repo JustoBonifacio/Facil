@@ -1,11 +1,13 @@
 
 import React from 'react';
 import { Listing, TransactionType } from '../../types';
+import { Eye, Heart, MapPin, Star, ArrowRight } from 'lucide-react';
 
 interface ListingCardProps {
     listing: Listing;
     onClick: (id: string) => void;
     variant?: 'default' | 'compact' | 'featured';
+    key?: string | number;
 }
 
 export const ListingCard: React.FC<ListingCardProps> = ({
@@ -70,8 +72,8 @@ export const ListingCard: React.FC<ListingCardProps> = ({
                 {/* Transaction Type Badge */}
                 <div className="absolute top-4 left-4">
                     <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider text-white shadow-md ${listing.transactionType === TransactionType.RENT
-                            ? 'bg-gradient-to-r from-orange-500 to-amber-500'
-                            : 'bg-gradient-to-r from-emerald-500 to-teal-500'
+                        ? 'bg-gradient-to-r from-orange-500 to-amber-500'
+                        : 'bg-gradient-to-r from-emerald-500 to-teal-500'
                         }`}>
                         {listing.transactionType === TransactionType.RENT ? 'Arrendar' : 'Comprar'}
                     </span>
@@ -79,16 +81,16 @@ export const ListingCard: React.FC<ListingCardProps> = ({
 
                 {/* Views Badge */}
                 <div className="absolute top-4 right-4">
-                    <span className="px-2 py-1 bg-black/50 backdrop-blur-sm rounded-full text-[10px] font-bold text-white flex items-center">
-                        <span className="mr-1">👁</span> {listing.views}
+                    <span className="px-2 py-1 bg-black/50 backdrop-blur-sm rounded-full text-[10px] font-bold text-white flex items-center gap-1">
+                        <Eye className="w-3 h-3" /> {listing.views}
                     </span>
                 </div>
 
                 {/* Featured Badge */}
                 {listing.isFeatured && (
                     <div className="absolute bottom-4 right-4">
-                        <span className="px-3 py-1 bg-yellow-400 text-yellow-900 rounded-full text-[10px] font-black uppercase">
-                            ⭐ Destaque
+                        <span className="px-3 py-1 bg-yellow-400 text-yellow-900 rounded-full text-[10px] font-black uppercase flex items-center gap-1 shadow-lg">
+                            <Star className="w-3 h-3 fill-yellow-900" /> Destaque
                         </span>
                     </div>
                 )}
@@ -105,8 +107,8 @@ export const ListingCard: React.FC<ListingCardProps> = ({
                     </span>
                 </div>
 
-                <div className="flex items-center text-gray-500 text-sm mb-4">
-                    <span className="mr-1">📍</span>
+                <div className="flex items-center text-gray-400 text-xs mb-4">
+                    <MapPin className="w-3 h-3 mr-1.5 text-blue-500" />
                     {listing.location.neighborhood}, {listing.location.city}
                 </div>
 
@@ -132,8 +134,8 @@ export const ListingCard: React.FC<ListingCardProps> = ({
                     <span className="text-xs text-gray-400">
                         {formatDate(listing.createdAt)}
                     </span>
-                    <span className="text-blue-600 font-bold text-sm group-hover:underline">
-                        Ver Detalhes →
+                    <span className="text-blue-600 font-bold text-sm group-hover:underline flex items-center gap-1">
+                        Ver Detalhes <ArrowRight className="w-4 h-4" />
                     </span>
                 </div>
             </div>

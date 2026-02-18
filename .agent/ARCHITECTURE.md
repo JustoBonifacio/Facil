@@ -139,6 +139,13 @@ Modular knowledge domains that agents can load on-demand. based on task context.
 | ------------------ | --------------------- |
 | `game-development` | Game logic, mechanics |
 
+### 🚀 Facil App Modules
+
+| Module                 | Status | Tech Stack                   | Features                               |
+| ---------------------- | ------ | ---------------------------- | -------------------------------------- |
+| **Trust & Verification** | Active | Lucide, MediaDevices, Canvas | Face Scan, BI/NIF Upload, Progress Bar |
+| **Digital Vault**      | Active | React Context, Lucide        | Document Storage, Status Tracking      |
+
 ### SEO & Growth
 
 | Skill              | Description                   |

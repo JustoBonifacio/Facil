@@ -73,3 +73,20 @@ export const API_ENDPOINTS = {
         CONVERSATION: '/messages/conversation/:id',
     },
 } as const;
+
+export const CATEGORY_LABELS: Record<string, string> = {
+    HOUSE: 'Casa',
+    APARTMENT: 'Apartamento',
+    LAND: 'Terreno',
+    SHOP: 'Loja/Comércio',
+    WAREHOUSE: 'Armazém',
+    CAR: 'Viatura',
+};
+
+export const STATUS_LABELS: Record<string, string> = {
+    AVAILABLE: 'Disponível',
+    RENTED: 'Arrendado',
+    SOLD: 'Vendido',
+    PAUSED: 'Pausado',
+    PENDING_REVIEW: 'Em Revisão',
+};

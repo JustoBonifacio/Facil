@@ -1,6 +1,6 @@
 
 import { supabase } from '../lib/supabase';
-import { Listing, User, Message, SearchFilters, UserRole } from '../types';
+import { Listing, User, Message, SearchFilters, UserRole, UserList, Review, Appointment, SearchHistory } from '../types';
 import { Database } from '../types/database.types';
 import { MOCK_LISTINGS, MOCK_USERS } from '../data/mockData';
 
@@ -13,8 +13,39 @@ const SIMULATED_DELAY = 300;
 // Helper para delay simulado no mock
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+// ============ PERSISTENCE HELPERS (For Mock Mode) ============
+const getPersistedData = <T>(key: string, defaultData: T): T => {
+    if (typeof window === 'undefined') return defaultData;
+    const saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) : defaultData;
+};
+
+const savePersistedData = (key: string, data: any) => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(key, JSON.stringify(data));
+};
+
+// Initialize Mock Data from LocalStorage if available
+let SYNCED_MOCK_USERS = getPersistedData('facil_mock_users', MOCK_USERS);
+let SYNCED_MOCK_LISTINGS = getPersistedData('facil_mock_listings', MOCK_LISTINGS);
+
+const updateMockUserInStorage = (user: User) => {
+    SYNCED_MOCK_USERS = SYNCED_MOCK_USERS.map(u => u.id === user.id ? user : u);
+    savePersistedData('facil_mock_users', SYNCED_MOCK_USERS);
+};
+
+const updateMockListingInStorage = (listing: Listing) => {
+    SYNCED_MOCK_LISTINGS = SYNCED_MOCK_LISTINGS.map(l => l.id === listing.id ? listing : l);
+    savePersistedData('facil_mock_listings', SYNCED_MOCK_LISTINGS);
+};
+
+const addMockListingToStorage = (listing: Listing) => {
+    SYNCED_MOCK_LISTINGS = [listing, ...SYNCED_MOCK_LISTINGS];
+    savePersistedData('facil_mock_listings', SYNCED_MOCK_LISTINGS);
+};
+
 // ============ MAPPERS (Database Row -> App Type) ============
-const mapListing = (row: Database['public']['Tables']['listings']['Row']): Listing => ({
+const mapListing = (row: any): Listing => ({
     id: row.id,
     ownerId: row.owner_id,
     title: row.title,
@@ -35,9 +66,11 @@ const mapListing = (row: Database['public']['Tables']['listings']['Row']): Listi
     updatedAt: row.updated_at,
     features: row.features || [],
     isFeatured: row.is_featured || false,
+    area: row.area,
+    priceHistory: row.price_history
 });
 
-const mapUser = (row: Database['public']['Tables']['profiles']['Row']): User => ({
+const mapUser = (row: any): User => ({
     id: row.id,
     name: row.name || 'Utilizador',
     email: row.email,
@@ -49,6 +82,9 @@ const mapUser = (row: Database['public']['Tables']['profiles']['Row']): User => 
     reviewCount: row.review_count || 0,
     joinedAt: row.created_at,
     bio: row.bio || undefined,
+    nif: row.nif,
+    companyName: row.company_name,
+    address: row.address
 });
 
 // ============ LISTINGS SERVICE ============
@@ -56,7 +92,7 @@ export const listingsService = {
     async getAll(filters?: SearchFilters): Promise<Listing[]> {
         if (USE_MOCK) {
             await delay(SIMULATED_DELAY);
-            let results = [...MOCK_LISTINGS];
+            let results = [...SYNCED_MOCK_LISTINGS];
 
             if (filters?.query) {
                 const q = filters.query.toLowerCase();
@@ -98,7 +134,7 @@ export const listingsService = {
     async getById(id: string): Promise<Listing | null> {
         if (USE_MOCK) {
             await delay(SIMULATED_DELAY);
-            return MOCK_LISTINGS.find(l => l.id === id) || null;
+            return SYNCED_MOCK_LISTINGS.find(l => l.id === id) || null;
         }
 
         const { data, error } = await supabase.from('listings').select('*').eq('id', id).single();
@@ -109,12 +145,14 @@ export const listingsService = {
     async create(listing: Omit<Listing, 'id' | 'createdAt' | 'views'>): Promise<Listing> {
         if (USE_MOCK) {
             await delay(SIMULATED_DELAY);
-            return {
+            const newListing = {
                 ...listing,
                 id: `l_${Date.now()}`,
                 createdAt: new Date().toISOString(),
                 views: 0,
             } as Listing;
+            addMockListingToStorage(newListing);
+            return newListing;
         }
 
         const { data, error } = await supabase.from('listings').insert({
@@ -132,7 +170,8 @@ export const listingsService = {
             longitude: listing.location.coords[1],
             features: listing.features,
             status: listing.status,
-            is_featured: listing.isFeatured
+            is_featured: listing.isFeatured,
+            area: listing.area
         } as any).select().single();
 
         if (error) throw error;
@@ -141,7 +180,33 @@ export const listingsService = {
 
     async incrementViews(id: string): Promise<void> {
         if (USE_MOCK) return;
-        await supabase.rpc('increment_views' as any, { listing_id: id });
+        await (supabase.rpc as any)('increment_views', { listing_id: id });
+    },
+
+    async update(id: string, listing: Partial<Listing>): Promise<Listing> {
+        if (USE_MOCK) {
+            await delay(SIMULATED_DELAY);
+            const index = SYNCED_MOCK_LISTINGS.findIndex(l => l.id === id);
+            if (index !== -1) {
+                SYNCED_MOCK_LISTINGS[index] = { ...SYNCED_MOCK_LISTINGS[index], ...listing };
+                savePersistedData('facil_mock_listings', SYNCED_MOCK_LISTINGS);
+                return SYNCED_MOCK_LISTINGS[index];
+            }
+            throw new Error('Listing not found');
+        }
+
+        const { data, error } = await (supabase.from('listings') as any).update({
+            title: listing.title,
+            description: listing.description,
+            price: listing.price,
+            status: listing.status,
+            images: listing.images,
+            features: listing.features,
+            area: listing.area
+        }).eq('id', id).select().single();
+
+        if (error) throw error;
+        return mapListing(data);
     }
 };
 
@@ -150,7 +215,7 @@ export const usersService = {
     async getAll(): Promise<User[]> {
         if (USE_MOCK) {
             await delay(SIMULATED_DELAY);
-            return MOCK_USERS;
+            return SYNCED_MOCK_USERS;
         }
 
         const { data, error } = await supabase.from('profiles').select('*');
@@ -164,7 +229,7 @@ export const usersService = {
     async getById(id: string): Promise<User | null> {
         if (USE_MOCK) {
             await delay(SIMULATED_DELAY);
-            return MOCK_USERS.find(u => u.id === id) || null;
+            return SYNCED_MOCK_USERS.find(u => u.id === id) || null;
         }
 
         const { data, error } = await supabase.from('profiles').select('*').eq('id', id).single();
@@ -174,7 +239,89 @@ export const usersService = {
 
     async verify(id: string): Promise<void> {
         if (USE_MOCK) return;
-        await supabase.from('profiles').update({ is_verified: true }).eq('id', id);
+        await (supabase.from('profiles') as any).update({ is_verified: true }).eq('id', id);
+    },
+    async update(id: string, user: Partial<User>): Promise<User> {
+        if (USE_MOCK) {
+            await delay(SIMULATED_DELAY);
+            const index = SYNCED_MOCK_USERS.findIndex(u => u.id === id);
+            if (index !== -1) {
+                SYNCED_MOCK_USERS[index] = { ...SYNCED_MOCK_USERS[index], ...user };
+                savePersistedData('facil_mock_users', SYNCED_MOCK_USERS);
+                return SYNCED_MOCK_USERS[index];
+            }
+            throw new Error('User not found');
+        }
+
+        const { data, error } = await (supabase.from('profiles') as any).update({
+            name: user.name,
+            phone: user.phone,
+            avatar_url: user.avatar,
+            bio: user.bio,
+            address: user.address
+        }).eq('id', id).select().single();
+
+        if (error) throw error;
+        return mapUser(data);
+    }
+};
+
+// ============ APPOINTMENTS SERVICE ============
+export const appointmentsService = {
+    async getByUser(userId: string): Promise<Appointment[]> {
+        if (USE_MOCK) return [];
+        const { data, error } = await (supabase.from('appointments') as any)
+            .select('*')
+            .or(`clientId.eq.${userId},ownerId.eq.${userId}`);
+
+        if (error || !data) return [];
+
+        return (data as any[]).map(row => ({
+            id: row.id,
+            clientId: row.clientId,
+            ownerId: row.ownerId,
+            listingId: row.listingId,
+            date: row.date,
+            status: row.status as any,
+            notes: row.notes || undefined,
+            createdAt: row.createdAt
+        }));
+    },
+    async create(appointment: Omit<Appointment, 'id' | 'createdAt'>): Promise<Appointment> {
+        if (USE_MOCK) throw new Error('Not implemented');
+        const { data, error } = await (supabase.from('appointments') as any).insert(appointment).select().single();
+        if (error || !data) throw error || new Error('Failed to create appointment');
+        return data as Appointment;
+    }
+};
+
+// ============ USER LISTS SERVICE ============
+export const userListsService = {
+    async getByUser(userId: string): Promise<UserList[]> {
+        if (USE_MOCK) return [];
+        const { data, error } = await (supabase.from('user_lists') as any).select('*').eq('userId', userId);
+        if (error || !data) return [];
+        return (data as any[]).map(row => ({
+            id: row.id,
+            userId: row.userId,
+            name: row.name,
+            description: row.description || undefined,
+            listings: row.listings,
+            createdAt: row.createdAt
+        }));
+    },
+    async create(userId: string, name: string, description?: string): Promise<UserList> {
+        if (USE_MOCK) throw new Error('Not implemented');
+        const { data, error } = await (supabase.from('user_lists') as any).insert({ userId, name, description }).select().single();
+        if (error) throw error;
+        return data as UserList;
+    },
+    async addToList(listId: string, listingId: string): Promise<void> {
+        if (USE_MOCK) return;
+        const { data: list } = await (supabase.from('user_lists') as any).select('listings').eq('id', listId).single();
+        if (!list) return;
+        const newListings = [...(list.listings || []), listingId];
+        await (supabase.from('user_lists') as any).update({ listings: newListings }).eq('id', listId);
     }
 };
 
@@ -186,17 +333,17 @@ export const messagesService = {
             return [];
         }
 
-        const { data, error } = await supabase.from('messages')
+        const { data, error } = await (supabase.from('messages') as any)
             .select('*')
             .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
             .order('created_at', { ascending: false });
 
-        if (error) {
-            console.warn('Supabase error fetching messages:', error);
+        if (error || !data) {
+            if (error) console.warn('Supabase error fetching messages:', error);
             return [];
         }
 
-        return (data || []).map(row => ({
+        return (data as any[]).map(row => ({
             id: row.id,
             listingId: row.listing_id || '',
             senderId: row.sender_id,
@@ -217,23 +364,24 @@ export const messagesService = {
             } as Message;
         }
 
-        const { data, error } = await supabase.from('messages').insert({
+        const { data, error } = await (supabase.from('messages') as any).insert({
             listing_id: message.listingId === '' ? null : message.listingId,
             sender_id: message.senderId,
             receiver_id: message.receiverId,
             content: message.content
-        } as any).select().single();
+        }).select().single();
 
-        if (error) throw error;
+        if (error || !data) throw error || new Error('Failed to send message');
 
+        const row = data as any;
         return {
-            id: data.id,
-            listingId: data.listing_id || '',
-            senderId: data.sender_id,
-            receiverId: data.receiver_id,
-            content: data.content,
-            timestamp: data.created_at,
-            isRead: data.is_read || false
+            id: row.id,
+            listingId: row.listing_id || '',
+            senderId: row.sender_id,
+            receiverId: row.receiver_id,
+            content: row.content,
+            timestamp: row.created_at,
+            isRead: row.is_read || false
         };
     }
 };
@@ -243,11 +391,10 @@ export const authService = {
     async login(email: string, password: string): Promise<{ user: User; token: string }> {
         if (USE_MOCK) {
             await delay(SIMULATED_DELAY);
-            const user = MOCK_USERS.find(u => u.email === email);
+            const user = SYNCED_MOCK_USERS.find(u => u.email === email);
             if (!user) {
-                // Fallback user if not in mock data list (for demo flexibility)
                 if (email.includes('admin')) {
-                    const admin = MOCK_USERS.find(u => u.role === 'ADMIN');
+                    const admin = SYNCED_MOCK_USERS.find(u => u.role === 'ADMIN');
                     if (admin) return { user: admin, token: 'mock_token' };
                 }
                 throw new Error('Invalid credentials');
@@ -286,7 +433,7 @@ export const authService = {
     }): Promise<User> {
         if (USE_MOCK) {
             await delay(SIMULATED_DELAY);
-            return {
+            const newUser: User = {
                 id: `u_${Date.now()}`,
                 name: data.name,
                 email: data.email,
@@ -301,6 +448,9 @@ export const authService = {
                 reviewCount: 0,
                 joinedAt: new Date().toISOString(),
             };
+            SYNCED_MOCK_USERS.push(newUser);
+            savePersistedData('facil_mock_users', SYNCED_MOCK_USERS);
+            return newUser;
         }
 
         const { data: authData, error } = await supabase.auth.signUp({
@@ -312,7 +462,7 @@ export const authService = {
                     role: data.role,
                     phone: data.phone,
                     nif: data.nif,
-                    company_name: data.companyName, // Snake case for DB trigger
+                    company_name: data.companyName,
                     address: data.address
                 }
             }

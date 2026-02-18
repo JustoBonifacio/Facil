@@ -3,7 +3,8 @@ import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { AppProvider, useApp } from './contexts/AppContext';
 import { ErrorBoundary, LoadingSpinner, PageSkeleton, Navbar, Footer } from './components';
-import { ROUTES } from './constants';
+import { DatabaseSeeder } from './components/dev/DatabaseSeeder';
+import { UserRole } from './types';
 import './styles/globals.css';
 
 // ============ LAZY LOADED PAGES ============
@@ -16,38 +17,51 @@ const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const InboxPage = lazy(() => import('./pages/InboxPage'));
 const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage'));
 const GodModePage = lazy(() => import('./pages/GodModePage'));
+const MapSearchPage = lazy(() => import('./pages/MapSearchPage'));
 
 // ============ PROTECTED ROUTE WRAPPER ============
-interface ProtectedRouteProps {
-    children: React.ReactNode;
-    requireAuth?: boolean;
-    requireAdmin?: boolean;
-}
-
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
+const ProtectedRoute = ({
     children,
     requireAuth = false,
-    requireAdmin = false
+    requireAdmin = false,
+    requireOwner = false
+}: {
+    children?: React.ReactNode;
+    requireAuth?: boolean;
+    requireAdmin?: boolean;
+    requireOwner?: boolean;
 }) => {
     const { state } = useApp();
     const location = useLocation();
+
+    if (state.isLoading) {
+        return <LoadingSpinner />;
+    }
 
     if (requireAuth && !state.user) {
         return <Navigate to="/auth" state={{ from: location }} replace />;
     }
 
-    if (requireAdmin && state.user?.role !== 'ADMIN') {
+    if (requireAdmin && state.user?.role !== UserRole.ADMIN) {
         return <Navigate to="/" replace />;
+    }
+
+    if (requireOwner && state.user?.role === UserRole.CLIENT) {
+        return <Navigate to="/dashboard" replace />;
     }
 
     return <>{children}</>;
 };
 
 // ============ MAIN LAYOUT ============
-const MainLayout: React.FC<{ children: React.ReactNode; hideNavbar?: boolean; hideFooter?: boolean }> = ({
+const MainLayout = ({
     children,
     hideNavbar = false,
     hideFooter = false
+}: {
+    children?: React.ReactNode;
+    hideNavbar?: boolean;
+    hideFooter?: boolean;
 }) => {
     const navigate = useNavigate();
     const location = useLocation();
@@ -62,6 +76,7 @@ const MainLayout: React.FC<{ children: React.ReactNode; hideNavbar?: boolean; hi
             'inbox': '/inbox',
             'admin_dashboard': '/admin',
             'god_mode': '/admin/god-mode',
+            'map_search': '/map-search',
         };
         navigate(routeMap[page] || '/');
     };
@@ -77,6 +92,7 @@ const MainLayout: React.FC<{ children: React.ReactNode; hideNavbar?: boolean; hi
         if (path === '/inbox') return 'inbox';
         if (path === '/admin') return 'admin_dashboard';
         if (path === '/admin/god-mode') return 'god_mode';
+        if (path === '/map-search') return 'map_search';
         return 'home';
     };
 
@@ -101,10 +117,18 @@ const MainLayout: React.FC<{ children: React.ReactNode; hideNavbar?: boolean; hi
 };
 
 // ============ APP ROUTES ============
-const AppRoutes: React.FC = () => {
+const AppRoutes = () => {
     return (
         <Routes>
-            {/* Public Routes */}
+            <Route
+                path="/map-search"
+                element={
+                    <MainLayout hideFooter>
+                        <MapSearchPage />
+                    </MainLayout>
+                }
+            />
+
             <Route
                 path="/"
                 element={
@@ -119,6 +143,16 @@ const AppRoutes: React.FC = () => {
                 element={
                     <MainLayout>
                         <AuthPage />
+                    </MainLayout>
+                }
+            />
+
+            {/* Added /setup route */}
+            <Route
+                path="/setup"
+                element={
+                    <MainLayout>
+                        <DatabaseSeeder />
                     </MainLayout>
                 }
             />
@@ -154,7 +188,7 @@ const AppRoutes: React.FC = () => {
             <Route
                 path="/create"
                 element={
-                    <ProtectedRoute requireAuth>
+                    <ProtectedRoute requireAuth requireOwner>
                         <MainLayout>
                             <CreateListingPage />
                         </MainLayout>
@@ -221,7 +255,7 @@ const AppRoutes: React.FC = () => {
 };
 
 // ============ 404 PAGE ============
-const NotFoundPage: React.FC = () => {
+const NotFoundPage = () => {
     const navigate = useNavigate();
 
     return (
@@ -242,7 +276,7 @@ const NotFoundPage: React.FC = () => {
 };
 
 // ============ MAIN APP ============
-const App: React.FC = () => {
+const App = () => {
     return (
         <ErrorBoundary>
             <AppProvider>

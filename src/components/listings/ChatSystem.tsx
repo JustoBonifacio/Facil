@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { User, Message, Listing } from '../types';
+import { User, Message, Listing } from '../../types';
 
 interface ChatSystemProps {
     currentUser: User;
@@ -11,7 +11,7 @@ interface ChatSystemProps {
     onClose: () => void;
 }
 
-const ChatSystem: React.FC<ChatSystemProps> = ({
+export const ChatSystem: React.FC<ChatSystemProps> = ({
     currentUser,
     listing,
     owner,
@@ -86,5 +86,6 @@ const ChatSystem: React.FC<ChatSystemProps> = ({
         </div>
     );
 };
-
-export default ChatSystem;
+// Remove export default at the end
+// export default ChatSystem;
+// Instead export the const directly

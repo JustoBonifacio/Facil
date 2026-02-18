@@ -9,9 +9,14 @@
       "DOM",
       "DOM.Iterable"
     ],
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
     "skipLibCheck": true,
     "types": [
-      "node"
+      "node",
+      "react",
+      "react-dom"
     ],
     "moduleResolution": "bundler",
     "isolatedModules": true,
@@ -24,7 +29,9 @@
       ]
     },
     "allowImportingTsExtensions": true,
-    "noEmit": true
+    "noEmit": true,
+    "checkJs": false,
+    "noImplicitAny": false
   },
   "include": [
     "src"

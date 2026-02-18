@@ -2,7 +2,7 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 
 interface Props {
-    children: ReactNode;
+    children?: ReactNode;
     fallback?: ReactNode;
 }
 
@@ -12,8 +12,10 @@ interface State {
 }
 
 export class ErrorBoundary extends Component<Props, State> {
-    public state: State = { hasError: false, error: null };
-
+    constructor(props: Props) {
+        super(props);
+        this.state = { hasError: false, error: null };
+    }
 
     static getDerivedStateFromError(error: Error): State {
         return { hasError: true, error };
@@ -21,7 +23,6 @@ export class ErrorBoundary extends Component<Props, State> {
 
     componentDidCatch(error: Error, errorInfo: ErrorInfo) {
         console.error('ErrorBoundary caught an error:', error, errorInfo);
-        // Em produção: enviar para serviço de monitorização (Sentry, etc.)
     }
 
     render() {

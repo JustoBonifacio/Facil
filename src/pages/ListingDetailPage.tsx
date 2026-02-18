@@ -2,9 +2,15 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
-import { LoadingSpinner } from '../components';
+import { LoadingSpinner, ChatSystem, ContractFlow } from '../components';
 import { TransactionType, Listing, User } from '../types';
 import { formatPrice, formatDate } from '../utils/helpers';
+import {
+    ArrowLeft, Heart, MapPin, Check,
+    ShieldCheck, MessageSquare, FileText,
+    AlertTriangle, ChevronLeft, ChevronRight,
+    Star
+} from 'lucide-react';
 
 const ListingDetailPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -15,6 +21,7 @@ const ListingDetailPage: React.FC = () => {
     const [owner, setOwner] = useState<User | null>(null);
     const [activeImageIndex, setActiveImageIndex] = useState(0);
     const [isChatOpen, setIsChatOpen] = useState(false);
+    const [isContractOpen, setIsContractOpen] = useState(false);
     const [message, setMessage] = useState('');
 
     useEffect(() => {
@@ -50,7 +57,8 @@ const ListingDetailPage: React.FC = () => {
             return;
         }
         // Open contract flow - to be implemented
-        alert('Fluxo de contrato será implementado em breve!');
+        // Open contract flow
+        setIsContractOpen(true);
     };
 
     if (!listing || !owner) {
@@ -73,9 +81,9 @@ const ListingDetailPage: React.FC = () => {
             {/* Back Button */}
             <button
                 onClick={() => navigate(-1)}
-                className="flex items-center text-gray-500 hover:text-blue-600 mb-6 font-medium transition"
+                className="flex items-center text-gray-500 hover:text-blue-600 mb-6 font-black uppercase tracking-widest text-[10px] transition-all group"
             >
-                <span className="mr-2">←</span> Voltar
+                <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" /> Voltar
             </button>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -89,20 +97,31 @@ const ListingDetailPage: React.FC = () => {
                             className="w-full h-full object-contain transition-transform duration-500"
                         />
 
+                        {/* Favorite Button */}
+                        <button
+                            onClick={() => actions.toggleFavorite(listing.id)}
+                            className={`absolute top-6 right-6 p-4 rounded-2xl shadow-2xl backdrop-blur-md transition-all z-20 hover:scale-110 active:scale-90 ${state.user?.favorites?.includes(listing.id)
+                                ? 'bg-red-500 text-white'
+                                : 'bg-white/50 text-white hover:bg-white hover:text-red-500'
+                                }`}
+                        >
+                            <Heart className={`w-6 h-6 ${state.user?.favorites?.includes(listing.id) ? 'fill-current' : ''}`} />
+                        </button>
+
                         {/* Image Navigation */}
                         {listing.images.length > 1 && (
                             <>
                                 <button
                                     onClick={() => setActiveImageIndex(prev => prev > 0 ? prev - 1 : listing.images.length - 1)}
-                                    className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-white/80 rounded-full opacity-0 group-hover:opacity-100 transition shadow-lg hover:bg-white"
+                                    className="absolute left-4 top-1/2 -translate-y-1/2 p-4 bg-white/90 backdrop-blur-sm rounded-2xl opacity-0 group-hover:opacity-100 transition shadow-2xl hover:bg-white text-gray-900"
                                 >
-                                    ←
+                                    <ChevronLeft className="w-6 h-6" />
                                 </button>
                                 <button
                                     onClick={() => setActiveImageIndex(prev => prev < listing.images.length - 1 ? prev + 1 : 0)}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-white/80 rounded-full opacity-0 group-hover:opacity-100 transition shadow-lg hover:bg-white"
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 p-4 bg-white/90 backdrop-blur-sm rounded-2xl opacity-0 group-hover:opacity-100 transition shadow-2xl hover:bg-white text-gray-900"
                                 >
-                                    →
+                                    <ChevronRight className="w-6 h-6" />
                                 </button>
                                 <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
                                     {listing.images.map((_, i) => (
@@ -137,9 +156,9 @@ const ListingDetailPage: React.FC = () => {
                     <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
                         <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-6">
                             <div>
-                                <h1 className="text-3xl font-extrabold text-gray-900 mb-2">{listing.title}</h1>
-                                <div className="flex items-center text-gray-600">
-                                    <span className="text-blue-500 mr-2">📍</span>
+                                <h1 className="text-4xl font-black text-gray-900 mb-2 tracking-tight">{listing.title}</h1>
+                                <div className="flex items-center text-gray-500 font-medium">
+                                    <MapPin className="w-4 h-4 text-blue-500 mr-2" />
                                     {listing.location.neighborhood}, {listing.location.city}
                                 </div>
                             </div>
@@ -178,9 +197,11 @@ const ListingDetailPage: React.FC = () => {
                             <h2 className="text-xl font-bold text-gray-900 mb-4">Características</h2>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                 {listing.features.map((feature, index) => (
-                                    <div key={index} className="flex items-center p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                                        <span className="text-blue-500 mr-3">✓</span>
-                                        <span className="text-gray-700 font-semibold">{feature}</span>
+                                    <div key={index} className="flex items-center p-5 bg-gray-50 rounded-2xl border border-gray-100/50 group hover:bg-white hover:shadow-lg transition-all duration-300">
+                                        <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 mr-4 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                            <Check className="w-4 h-4" />
+                                        </div>
+                                        <span className="text-gray-700 font-bold">{feature}</span>
                                     </div>
                                 ))}
                             </div>
@@ -198,10 +219,8 @@ const ListingDetailPage: React.FC = () => {
                             <div className="relative">
                                 <img src={owner.avatar} alt={owner.name} className="h-16 w-16 rounded-full border-2 border-blue-100 p-1" />
                                 {owner.isVerified && (
-                                    <span className="absolute -bottom-1 -right-1 bg-blue-500 text-white rounded-full p-1.5 border-2 border-white">
-                                        <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
-                                            <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" />
-                                        </svg>
+                                    <span className="absolute -bottom-1 -right-1 bg-blue-600 text-white rounded-full p-1.5 border-4 border-white shadow-lg">
+                                        <ShieldCheck className="w-4 h-4" />
                                     </span>
                                 )}
                             </div>
@@ -219,15 +238,16 @@ const ListingDetailPage: React.FC = () => {
                         <div className="space-y-3">
                             <button
                                 onClick={handleContact}
-                                className="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg hover:bg-blue-700 transition-all hover:shadow-blue-200"
+                                className="w-full bg-blue-600 text-white font-black py-5 rounded-[2rem] shadow-2xl shadow-blue-200 hover:bg-blue-700 transition-all flex items-center justify-center gap-3"
                             >
-                                💬 Enviar Mensagem
+                                <MessageSquare className="w-5 h-5" /> Enviar Mensagem
                             </button>
                             <button
                                 onClick={handleAction}
-                                className="w-full bg-white text-blue-600 border-2 border-blue-600 font-bold py-4 rounded-2xl hover:bg-blue-50 transition-all"
+                                className="w-full bg-white text-blue-600 border-2 border-blue-600 font-black py-5 rounded-[2rem] hover:bg-blue-50 transition-all flex items-center justify-center gap-3"
                             >
-                                {listing.transactionType === TransactionType.RENT ? '📄 Propor Arrendamento' : '🤝 Propor Compra'}
+                                <FileText className="w-5 h-5" />
+                                {listing.transactionType === TransactionType.RENT ? 'Propor Arrendamento' : 'Propor Compra'}
                             </button>
                         </div>
 
@@ -237,11 +257,12 @@ const ListingDetailPage: React.FC = () => {
                     </div>
 
                     {/* Security Tip */}
-                    <div className="bg-amber-50 p-6 rounded-3xl border border-amber-100">
-                        <h4 className="text-amber-800 font-bold text-sm mb-2 uppercase tracking-wide flex items-center">
-                            <span className="mr-2">⚠️</span> Dica de Segurança
-                        </h4>
-                        <p className="text-amber-700 text-sm">
+                    <div className="bg-amber-50 p-8 rounded-[2.5rem] border border-amber-100 flex flex-col gap-3">
+                        <div className="flex items-center gap-2 text-amber-800">
+                            <AlertTriangle className="w-5 h-5" />
+                            <h4 className="font-black text-xs uppercase tracking-[0.2em]">Segurança</h4>
+                        </div>
+                        <p className="text-amber-700 text-sm font-medium leading-relaxed">
                             Nunca envie pagamentos antes de ver o item pessoalmente e assinar o contrato digital na FACIL.
                         </p>
                     </div>
@@ -249,48 +270,28 @@ const ListingDetailPage: React.FC = () => {
             </div>
 
             {/* Chat Modal */}
-            {isChatOpen && state.user && (
-                <div className="fixed bottom-6 right-6 w-[400px] h-[500px] bg-white rounded-[32px] shadow-2xl flex flex-col z-50 border border-blue-100 overflow-hidden animate-scale-in">
-                    <div className="p-4 bg-blue-600 text-white flex justify-between items-center">
-                        <div className="flex items-center">
-                            <img src={owner.avatar} className="h-10 w-10 rounded-full border-2 border-white/20" alt="" />
-                            <div className="ml-3">
-                                <p className="font-bold text-sm">{owner.name}</p>
-                                <p className="text-xs text-blue-100 truncate max-w-[180px]">Re: {listing.title}</p>
-                            </div>
-                        </div>
-                        <button onClick={() => setIsChatOpen(false)} className="p-2 hover:bg-white/10 rounded-full">✕</button>
-                    </div>
+            {isContractOpen && state.user && listing && owner && (
+                <ContractFlow
+                    listing={listing}
+                    client={state.user}
+                    onComplete={() => {
+                        setIsContractOpen(false);
+                        alert('Contrato iniciado com sucesso! Verifique seu dashboard.');
+                    }}
+                    onCancel={() => setIsContractOpen(false)}
+                />
+            )}
 
-                    <div className="flex-grow p-4 overflow-y-auto space-y-3 bg-gray-50">
-                        {chatMessages.length === 0 && (
-                            <p className="text-center text-gray-400 text-sm py-8">Inicie a conversa...</p>
-                        )}
-                        {chatMessages.map(m => (
-                            <div key={m.id} className={`flex ${m.senderId === state.user!.id ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`max-w-[80%] p-3 rounded-2xl text-sm ${m.senderId === state.user!.id
-                                        ? 'bg-blue-600 text-white rounded-br-none'
-                                        : 'bg-white text-gray-700 rounded-bl-none border'
-                                    }`}>
-                                    {m.content}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-
-                    <form onSubmit={handleSendMessage} className="p-4 bg-white border-t flex gap-2">
-                        <input
-                            type="text"
-                            value={message}
-                            onChange={(e) => setMessage(e.target.value)}
-                            placeholder="Mensagem..."
-                            className="flex-grow bg-gray-100 p-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
-                        />
-                        <button type="submit" className="bg-blue-600 text-white p-3 rounded-xl hover:bg-blue-700">
-                            ➤
-                        </button>
-                    </form>
-                </div>
+            {/* Chat Modal */}
+            {isChatOpen && state.user && listing && owner && (
+                <ChatSystem
+                    currentUser={state.user}
+                    listing={listing}
+                    owner={owner}
+                    messages={chatMessages}
+                    onSendMessage={(lId, rId, content) => actions.sendMessage(lId, rId, content)}
+                    onClose={() => setIsChatOpen(false)}
+                />
             )}
         </div>
     );

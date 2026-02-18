@@ -16,12 +16,15 @@ export interface Database {
                     name: string | null
                     email: string
                     phone: string | null
-                    role: 'OWNER' | 'CLIENT' | 'ADMIN'
+                    role: string
                     is_verified: boolean
                     avatar_url: string | null
                     rating: number
                     review_count: number
                     bio: string | null
+                    nif: string | null
+                    company_name: string | null
+                    address: string | null
                     created_at: string
                     updated_at: string
                 }
@@ -30,12 +33,15 @@ export interface Database {
                     name?: string | null
                     email: string
                     phone?: string | null
-                    role?: 'OWNER' | 'CLIENT' | 'ADMIN'
+                    role?: string
                     is_verified?: boolean
                     avatar_url?: string | null
                     rating?: number
                     review_count?: number
                     bio?: string | null
+                    nif?: string | null
+                    company_name?: string | null
+                    address?: string | null
                     created_at?: string
                     updated_at?: string
                 }
@@ -44,12 +50,15 @@ export interface Database {
                     name?: string | null
                     email?: string
                     phone?: string | null
-                    role?: 'OWNER' | 'CLIENT' | 'ADMIN'
+                    role?: string
                     is_verified?: boolean
                     avatar_url?: string | null
                     rating?: number
                     review_count?: number
                     bio?: string | null
+                    nif?: string | null
+                    company_name?: string | null
+                    address?: string | null
                     created_at?: string
                     updated_at?: string
                 }
@@ -62,9 +71,9 @@ export interface Database {
                     description: string
                     price: number
                     currency: string
-                    category: 'HOUSE' | 'APARTMENT' | 'LAND' | 'SHOP' | 'WAREHOUSE' | 'CAR'
-                    transaction_type: 'RENT' | 'BUY'
-                    status: 'AVAILABLE' | 'RENTED' | 'SOLD' | 'PAUSED' | 'PENDING_REVIEW'
+                    category: string
+                    transaction_type: string
+                    status: string
                     images: string[]
                     city: string
                     neighborhood: string
@@ -73,6 +82,8 @@ export interface Database {
                     features: string[]
                     views: number
                     is_featured: boolean
+                    area: number | null
+                    price_history: Json | null
                     created_at: string
                     updated_at: string
                 }
@@ -83,9 +94,9 @@ export interface Database {
                     description: string
                     price: number
                     currency?: string
-                    category: 'HOUSE' | 'APARTMENT' | 'LAND' | 'SHOP' | 'WAREHOUSE' | 'CAR'
-                    transaction_type: 'RENT' | 'BUY'
-                    status?: 'AVAILABLE' | 'RENTED' | 'SOLD' | 'PAUSED' | 'PENDING_REVIEW'
+                    category: string
+                    transaction_type: string
+                    status?: string
                     images?: string[]
                     city: string
                     neighborhood: string
@@ -94,6 +105,8 @@ export interface Database {
                     features?: string[]
                     views?: number
                     is_featured?: boolean
+                    area?: number | null
+                    price_history?: Json | null
                     created_at?: string
                     updated_at?: string
                 }
@@ -104,9 +117,9 @@ export interface Database {
                     description?: string
                     price?: number
                     currency?: string
-                    category?: 'HOUSE' | 'APARTMENT' | 'LAND' | 'SHOP' | 'WAREHOUSE' | 'CAR'
-                    transaction_type?: 'RENT' | 'BUY'
-                    status?: 'AVAILABLE' | 'RENTED' | 'SOLD' | 'PAUSED' | 'PENDING_REVIEW'
+                    category?: string
+                    transaction_type?: string
+                    status?: string
                     images?: string[]
                     city?: string
                     neighborhood?: string
@@ -115,8 +128,68 @@ export interface Database {
                     features?: string[]
                     views?: number
                     is_featured?: boolean
+                    area?: number | null
+                    price_history?: Json | null
                     created_at?: string
                     updated_at?: string
+                }
+            }
+            appointments: {
+                Row: {
+                    id: string
+                    clientId: string
+                    ownerId: string
+                    listingId: string
+                    date: string
+                    status: string
+                    notes: string | null
+                    createdAt: string
+                }
+                Insert: {
+                    id?: string
+                    clientId: string
+                    ownerId: string
+                    listingId: string
+                    date: string
+                    status?: string
+                    notes?: string | null
+                    createdAt?: string
+                }
+                Update: {
+                    id?: string
+                    clientId?: string
+                    ownerId?: string
+                    listingId?: string
+                    date?: string
+                    status?: string
+                    notes?: string | null
+                    createdAt?: string
+                }
+            }
+            user_lists: {
+                Row: {
+                    id: string
+                    userId: string
+                    name: string
+                    description: string | null
+                    listings: string[]
+                    createdAt: string
+                }
+                Insert: {
+                    id?: string
+                    userId: string
+                    name: string
+                    description?: string | null
+                    listings?: string[]
+                    createdAt?: string
+                }
+                Update: {
+                    id?: string
+                    userId?: string
+                    name?: string
+                    description?: string | null
+                    listings?: string[]
+                    createdAt?: string
                 }
             }
             messages: {
@@ -154,7 +227,7 @@ export interface Database {
                     user_id: string
                     title: string
                     message: string
-                    type: 'INFO' | 'SUCCESS' | 'WARNING' | 'ERROR'
+                    type: string
                     is_read: boolean
                     link: string | null
                     created_at: string
@@ -164,7 +237,7 @@ export interface Database {
                     user_id: string
                     title: string
                     message: string
-                    type?: 'INFO' | 'SUCCESS' | 'WARNING' | 'ERROR'
+                    type?: string
                     is_read?: boolean
                     link?: string | null
                     created_at?: string
@@ -174,12 +247,26 @@ export interface Database {
                     user_id?: string
                     title?: string
                     message?: string
-                    type?: 'INFO' | 'SUCCESS' | 'WARNING' | 'ERROR'
+                    type?: string
                     is_read?: boolean
                     link?: string | null
                     created_at?: string
                 }
             }
+        }
+        Views: {
+            [_ in never]: never
+        }
+        Functions: {
+            increment_views: {
+                Args: {
+                    listing_id: string
+                }
+                Returns: undefined
+            }
+        }
+        Enums: {
+            [_ in never]: never
         }
     }
 }

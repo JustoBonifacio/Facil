@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
 import { Message, User, Listing } from '../types';
 import { formatDate, formatTime } from '../utils/helpers';
+import { ArrowLeft, Search, MessageSquare, Send, Info, ChevronRight } from 'lucide-react';
 
 interface Conversation {
     otherUser: User;
@@ -81,28 +82,29 @@ const InboxPage: React.FC = () => {
                 </div>
                 <button
                     onClick={() => navigate('/dashboard')}
-                    className="text-gray-500 hover:text-blue-600 font-medium"
+                    className="text-gray-400 hover:text-blue-600 font-black uppercase tracking-widest text-[10px] flex items-center gap-2 group transition-all"
                 >
-                    ← Voltar ao Dashboard
+                    <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Dashboard
                 </button>
             </div>
 
             <div className="bg-white rounded-[32px] shadow-xl overflow-hidden border border-gray-100 min-h-[600px] flex">
                 {/* Conversations List */}
                 <div className="w-full md:w-1/3 border-r border-gray-100">
-                    <div className="p-4 border-b border-gray-100">
+                    <div className="p-6 border-b border-gray-100 relative">
+                        <Search className="absolute left-10 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <input
                             type="text"
-                            placeholder="Pesquisar conversas..."
-                            className="w-full p-3 bg-gray-50 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                            placeholder="Pesquisar..."
+                            className="w-full pl-12 pr-4 py-4 bg-gray-50 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 font-bold placeholder:text-gray-300"
                         />
                     </div>
 
                     <div className="overflow-y-auto" style={{ height: 'calc(600px - 70px)' }}>
                         {conversations.length === 0 ? (
-                            <div className="p-8 text-center">
-                                <span className="text-4xl mb-4 block">💬</span>
-                                <p className="text-gray-500">Sem mensagens ainda</p>
+                            <div className="p-12 text-center">
+                                <MessageSquare className="w-12 h-12 text-gray-200 mx-auto mb-4" />
+                                <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Sem mensagens</p>
                             </div>
                         ) : (
                             conversations.map((conv) => (
@@ -110,9 +112,9 @@ const InboxPage: React.FC = () => {
                                     key={`${conv.otherUser.id}-${conv.listing?.id}`}
                                     onClick={() => setSelectedConversation(conv)}
                                     className={`flex items-center p-4 cursor-pointer transition border-b border-gray-50 ${selectedConversation?.otherUser.id === conv.otherUser.id &&
-                                            selectedConversation?.listing?.id === conv.listing?.id
-                                            ? 'bg-blue-50 border-l-4 border-l-blue-600'
-                                            : 'hover:bg-gray-50'
+                                        selectedConversation?.listing?.id === conv.listing?.id
+                                        ? 'bg-blue-50 border-l-4 border-l-blue-600'
+                                        : 'hover:bg-gray-50'
                                         }`}
                                 >
                                     <div className="relative">
@@ -169,9 +171,9 @@ const InboxPage: React.FC = () => {
                                 {selectedConversation.listing && (
                                     <button
                                         onClick={() => navigate(`/listing/${selectedConversation.listing!.id}`)}
-                                        className="ml-auto text-sm text-gray-500 hover:text-blue-600 font-medium"
+                                        className="ml-auto text-[10px] font-black uppercase tracking-widest text-blue-600 hover:text-blue-700 bg-blue-50 px-4 py-2 rounded-xl transition-all flex items-center gap-2"
                                     >
-                                        Ver anúncio →
+                                        Ver anúncio <ChevronRight className="w-3 h-3" />
                                     </button>
                                 )}
                             </div>
@@ -193,8 +195,8 @@ const InboxPage: React.FC = () => {
                                             )}
                                             <div className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
                                                 <div className={`max-w-[70%] p-4 rounded-2xl ${isMine
-                                                        ? 'bg-blue-600 text-white rounded-br-none'
-                                                        : 'bg-white text-gray-800 rounded-bl-none shadow-sm border'
+                                                    ? 'bg-blue-600 text-white rounded-br-none'
+                                                    : 'bg-white text-gray-800 rounded-bl-none shadow-sm border'
                                                     }`}>
                                                     <p className="text-sm">{message.content}</p>
                                                     <p className={`text-[10px] mt-2 ${isMine ? 'text-blue-100' : 'text-gray-400'}`}>
@@ -208,27 +210,29 @@ const InboxPage: React.FC = () => {
                             </div>
 
                             {/* Input */}
-                            <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-100 flex gap-3">
+                            <form onSubmit={handleSendMessage} className="p-6 border-t border-gray-100 flex gap-4 bg-white">
                                 <input
                                     type="text"
                                     value={newMessage}
                                     onChange={(e) => setNewMessage(e.target.value)}
                                     placeholder="Escreva a sua mensagem..."
-                                    className="flex-grow p-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500/20"
+                                    className="flex-grow p-5 bg-gray-50 rounded-[1.5rem] outline-none focus:ring-2 focus:ring-blue-500/20 font-medium"
                                 />
                                 <button
                                     type="submit"
-                                    className="bg-blue-600 text-white px-6 rounded-2xl font-bold hover:bg-blue-700 transition"
+                                    className="bg-blue-600 text-white px-8 rounded-[1.5rem] font-black hover:bg-blue-700 transition shadow-xl shadow-blue-200 flex items-center justify-center gap-2"
                                 >
-                                    Enviar
+                                    <Send className="w-5 h-5" />
                                 </button>
                             </form>
                         </>
                     ) : (
-                        <div className="flex-grow flex items-center justify-center text-gray-400">
+                        <div className="flex-grow flex items-center justify-center bg-gray-50/30">
                             <div className="text-center">
-                                <span className="text-6xl mb-4 block">💬</span>
-                                <p className="font-medium">Selecione uma conversa</p>
+                                <div className="w-20 h-20 bg-white rounded-[2.5rem] shadow-sm flex items-center justify-center mx-auto mb-6">
+                                    <MessageSquare className="w-10 h-10 text-gray-200" />
+                                </div>
+                                <p className="font-black text-[10px] uppercase tracking-widest text-gray-400">Selecione uma conversa</p>
                             </div>
                         </div>
                     )}

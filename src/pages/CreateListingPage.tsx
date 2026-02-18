@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
 import { Listing, ListingCategory, TransactionType, ListingStatus } from '../types';
-import { CITIES, VALIDATION } from '../constants';
+import { CITIES, VALIDATION, CATEGORY_LABELS } from '../constants';
 
 const CreateListingPage: React.FC = () => {
     const navigate = useNavigate();
@@ -113,8 +113,8 @@ const CreateListingPage: React.FC = () => {
                     {[1, 2, 3].map((step) => (
                         <React.Fragment key={step}>
                             <div className={`flex items-center justify-center h-10 w-10 rounded-full font-bold text-sm transition ${currentStep >= step
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-gray-100 text-gray-400'
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-gray-100 text-gray-400'
                                 }`}>
                                 {step}
                             </div>
@@ -159,7 +159,7 @@ const CreateListingPage: React.FC = () => {
                                         onChange={e => updateField('category', e.target.value)}
                                     >
                                         {Object.values(ListingCategory).map(cat => (
-                                            <option key={cat} value={cat}>{cat}</option>
+                                            <option key={cat} value={cat}>{CATEGORY_LABELS[cat] || cat}</option>
                                         ))}
                                     </select>
                                 </div>
@@ -273,7 +273,7 @@ const CreateListingPage: React.FC = () => {
                                 <h3 className="font-bold text-gray-900 mb-4">Resumo do Anúncio</h3>
                                 <div className="space-y-2 text-sm">
                                     <p><span className="text-gray-500">Título:</span> <span className="font-medium">{formData.title}</span></p>
-                                    <p><span className="text-gray-500">Categoria:</span> <span className="font-medium">{formData.category}</span></p>
+                                    <p><span className="text-gray-500">Categoria:</span> <span className="font-medium">{CATEGORY_LABELS[formData.category] || formData.category}</span></p>
                                     <p><span className="text-gray-500">Tipo:</span> <span className="font-medium">{formData.transactionType === TransactionType.RENT ? 'Arrendamento' : 'Venda'}</span></p>
                                     <p><span className="text-gray-500">Preço:</span> <span className="font-bold text-blue-700">{Number(formData.price).toLocaleString()} AOA</span></p>
                                     <p><span className="text-gray-500">Local:</span> <span className="font-medium">{formData.neighborhood}, {formData.city}</span></p>

@@ -49,27 +49,30 @@ export function useListingsFilter() {
             results = results.filter(l => l.location.city === filters.city);
         }
 
+        // Novos filtros
+        if (filters.typology) {
+            results = results.filter(l => l.features?.some(f => f.includes(filters.typology!)));
+        }
+
+        if (filters.isFurnished !== undefined) {
+            results = results.filter(l => l.features?.some(f =>
+                filters.isFurnished ? f.toLowerCase().includes('mobilado') : f.toLowerCase().includes('sem mobília')
+            ));
+        }
+
         return results;
-    }, [state.listings, debouncedQuery, filters.category, filters.transactionType, filters.minPrice, filters.maxPrice, filters.city]);
+    }, [state.listings, debouncedQuery, filters]);
 
     const setQuery = useCallback((query: string) => {
         setFilters(prev => ({ ...prev, query }));
     }, []);
 
+    const updateFilters = useCallback((newFilters: SearchFilters) => {
+        setFilters(prev => ({ ...prev, ...newFilters }));
+    }, []);
+
     const setCategory = useCallback((category: ListingCategory | undefined) => {
         setFilters(prev => ({ ...prev, category }));
-    }, []);
-
-    const setTransactionType = useCallback((transactionType: TransactionType | undefined) => {
-        setFilters(prev => ({ ...prev, transactionType }));
-    }, []);
-
-    const setPriceRange = useCallback((min?: number, max?: number) => {
-        setFilters(prev => ({ ...prev, minPrice: min, maxPrice: max }));
-    }, []);
-
-    const setCity = useCallback((city: string | undefined) => {
-        setFilters(prev => ({ ...prev, city }));
     }, []);
 
     const clearFilters = useCallback(() => {
@@ -78,11 +81,9 @@ export function useListingsFilter() {
 
     const activeFiltersCount = useMemo(() => {
         let count = 0;
-        if (filters.query) count++;
-        if (filters.category) count++;
-        if (filters.transactionType) count++;
-        if (filters.minPrice !== undefined || filters.maxPrice !== undefined) count++;
-        if (filters.city) count++;
+        Object.values(filters).forEach(val => {
+            if (val !== undefined && val !== '') count++;
+        });
         return count;
     }, [filters]);
 
@@ -91,9 +92,7 @@ export function useListingsFilter() {
         filters,
         setQuery,
         setCategory,
-        setTransactionType,
-        setPriceRange,
-        setCity,
+        updateFilters,
         clearFilters,
         activeFiltersCount,
         totalCount: state.listings.length,

@@ -23,7 +23,7 @@ const AuthPage: React.FC = () => {
     const [companyName, setCompanyName] = useState('');
     const [address, setAddress] = useState('');
 
-    const from = (location.state as any)?.from?.pathname || '/';
+    const from = (location.state as any)?.from?.pathname || '/dashboard';
 
     // Redirect if already logged in
     React.useEffect(() => {
@@ -104,7 +104,7 @@ const AuthPage: React.FC = () => {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Palavra-passe</label>
                             <input
                                 type="password"
                                 required

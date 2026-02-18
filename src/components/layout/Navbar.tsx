@@ -3,6 +3,7 @@ import React from 'react';
 import { User, Notification, Message } from '../../types';
 import { useApp } from '../../contexts/AppContext';
 import { USE_MOCK } from '../../services/api';
+import { MessageSquare, Bell, LogOut, PlusCircle } from 'lucide-react';
 
 interface NavbarProps {
     onNavigate: (page: string) => void;
@@ -50,12 +51,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentPage }) => {
                             >
                                 Categorias
                             </NavLink>
-                            {user && (
+                            {user && user.role !== 'CLIENT' && (
                                 <NavLink
                                     active={currentPage === 'create'}
                                     onClick={() => onNavigate('create')}
                                 >
-                                    <span className="text-blue-600">+ Publicar</span>
+                                    <span className="text-blue-600 flex items-center gap-1.5">
+                                        <PlusCircle className="w-4 h-4" /> Publicar
+                                    </span>
                                 </NavLink>
                             )}
                         </nav>
@@ -67,7 +70,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentPage }) => {
                             <>
                                 {/* Messages */}
                                 <IconButton
-                                    icon="💬"
+                                    icon={<MessageSquare className="w-5 h-5" />}
                                     onClick={() => onNavigate('inbox')}
                                     aria-label="Mensagens"
                                 />
@@ -75,8 +78,12 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentPage }) => {
                                 {/* Notifications */}
                                 <div className="relative">
                                     <IconButton
-                                        icon="🔔"
+                                        icon={<Bell className="w-5 h-5" />}
                                         badge={unreadNotifications}
+                                        onClick={() => {
+                                            onNavigate('dashboard');
+                                            actions.markNotificationsRead();
+                                        }}
                                         aria-label="Notificações"
                                     />
                                 </div>
@@ -99,9 +106,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentPage }) => {
                                 {/* Logout */}
                                 <button
                                     onClick={actions.logout}
-                                    className="ml-2 text-xs font-bold text-red-500 hover:text-red-700 uppercase tracking-wider"
+                                    className="ml-2 p-2.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all"
+                                    title="Sair"
                                 >
-                                    Sair
+                                    <LogOut className="w-5 h-5" />
                                 </button>
                             </>
                         ) : (
@@ -130,7 +138,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentPage }) => {
 // ============ SUB-COMPONENTS ============
 
 interface NavLinkProps {
-    children: React.ReactNode;
+    children?: React.ReactNode;
     active: boolean;
     onClick: () => void;
 }
@@ -148,7 +156,7 @@ const NavLink: React.FC<NavLinkProps> = ({ children, active, onClick }) => (
 );
 
 interface IconButtonProps {
-    icon: string;
+    icon: React.ReactNode;
     onClick?: () => void;
     badge?: number;
     'aria-label': string;
@@ -157,10 +165,10 @@ interface IconButtonProps {
 const IconButton: React.FC<IconButtonProps> = ({ icon, onClick, badge, ...props }) => (
     <button
         onClick={onClick}
-        className="relative p-2.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition"
+        className="relative p-2.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
         {...props}
     >
-        <span className="text-lg">{icon}</span>
+        {icon}
         {badge !== undefined && badge > 0 && (
             <span className="absolute -top-0.5 -right-0.5 h-5 w-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center shadow">
                 {badge > 9 ? '9+' : badge}

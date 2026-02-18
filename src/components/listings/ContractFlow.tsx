@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Listing, User, TransactionType } from '../types';
+import { Listing, User, TransactionType } from '../../types';
 
 interface ContractFlowProps {
     listing: Listing;
@@ -9,7 +9,7 @@ interface ContractFlowProps {
     onCancel: () => void;
 }
 
-const ContractFlow: React.FC<ContractFlowProps> = ({
+export const ContractFlow: React.FC<ContractFlowProps> = ({
     listing,
     client,
     onComplete,
@@ -68,9 +68,9 @@ const ContractFlow: React.FC<ContractFlowProps> = ({
                             <p className="text-gray-500 mb-8">O nosso contrato inteligente garante a segurança de ambas as partes.</p>
 
                             <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100 mb-8 h-48 overflow-y-auto text-xs text-gray-600 leading-relaxed font-mono">
-                                CLÁUSULA 1ª: O proprietário declara ser o legítimo detentor do bem...
-                                CLÁUSULA 2ª: O pagamento será processado via FACIL PAY mediante confirmação da entrega...
-                                CLÁUSULA 3ª: Em caso de litígio, as partes aceitam a mediação da plataforma...
+                                CLÁUSULA 1ª: O proprietário declara ser o legítimo detentor do bem...<br />
+                                CLÁUSULA 2ª: O pagamento será processado via FACIL PAY mediante confirmação da entrega...<br />
+                                CLÁUSULA 3ª: Em caso de litígio, as partes aceitam a mediação da plataforma...<br />
                                 [CONTEÚDO DINÂMICO DO CONTRATO]
                             </div>
 
@@ -112,5 +112,3 @@ const ContractFlow: React.FC<ContractFlowProps> = ({
         </div>
     );
 };
-
-export default ContractFlow;

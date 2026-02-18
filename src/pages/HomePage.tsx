@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
 import { useListingsFilter } from '../hooks';
 import { ListingCard, SearchBar } from '../components';
-import { ListingCategory, SearchFilters } from '../types';
+import { SearchFilters } from '../types';
+import { Map as MapIcon, Info, Search as SearchIcon } from 'lucide-react';
 
 const HomePage: React.FC = () => {
     const navigate = useNavigate();
@@ -12,8 +13,7 @@ const HomePage: React.FC = () => {
     const {
         listings,
         filters,
-        setQuery,
-        setCategory,
+        updateFilters,
         clearFilters,
         filteredCount,
         totalCount
@@ -24,103 +24,112 @@ const HomePage: React.FC = () => {
     };
 
     const handleSearch = (searchFilters: SearchFilters) => {
-        if (searchFilters.query) setQuery(searchFilters.query);
-        if (searchFilters.category) setCategory(searchFilters.category);
+        updateFilters(searchFilters);
+        // Smooth scroll to results
+        const resultsEl = document.getElementById('results-section');
+        if (resultsEl) resultsEl.scrollIntoView({ behavior: 'smooth' });
     };
-
-    const handleCategoryClick = (category: ListingCategory) => {
-        setCategory(category);
-        window.scrollTo({ top: 600, behavior: 'smooth' });
-    };
-
-    const categories = [
-        { id: ListingCategory.HOUSE, label: 'Casas', icon: '🏠' },
-        { id: ListingCategory.APARTMENT, label: 'Apartamentos', icon: '🏢' },
-        { id: ListingCategory.LAND, label: 'Terrenos', icon: '🏞️' },
-        { id: ListingCategory.CAR, label: 'Viaturas', icon: '🚗' },
-        { id: ListingCategory.SHOP, label: 'Lojas', icon: '🏪' },
-        { id: ListingCategory.WAREHOUSE, label: 'Armazéns', icon: '🏭' },
-    ];
 
     return (
         <div className="flex flex-col">
-            {/* Hero Section */}
-            <section className="relative h-[500px] overflow-hidden">
+            {/* Hero Section with Glassmorphism Search */}
+            <section className="relative h-[650px] overflow-hidden flex items-center justify-center">
                 <img
                     src={state.bannerUrl}
                     alt="FACIL Angola - Marketplace"
-                    className="w-full h-full object-cover brightness-[0.7]"
+                    className="absolute inset-0 w-full h-full object-cover brightness-[0.6] scale-105 animate-slow-zoom"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-b from-blue-900/20 via-transparent to-white" />
 
-                <div className="absolute inset-0 flex flex-col items-center justify-center px-4">
-                    <h1 className="text-4xl md:text-6xl font-black text-white text-center mb-6 drop-shadow-lg animate-fade-in">
-                        Encontre o seu lugar em Angola
+                <div className="relative z-10 w-full max-w-5xl px-4 flex flex-col items-center">
+                    <span className="bg-blue-600 text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.3em] mb-6 animate-fade-in shadow-xl">
+                        O Marketplace de Angola
+                    </span>
+                    <h1 className="text-5xl md:text-7xl font-black text-white text-center mb-8 drop-shadow-2xl animate-fade-in leading-tight">
+                        Seu novo capítulo <br />
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">começa aqui.</span>
                     </h1>
-                    <p className="text-xl text-white/90 text-center mb-8 max-w-2xl drop-shadow-md animate-fade-in delay-100">
-                        A plataforma mais segura para comprar, alugar e vender imóveis e viaturas com verificação de identidade.
-                    </p>
 
-                    <div className="w-full max-w-3xl animate-slide-up delay-200">
+                    <div className="w-full animate-slide-up delay-200">
                         <SearchBar onSearch={handleSearch} />
+                    </div>
+
+                    <div className="mt-10 flex gap-8 text-white/80 font-bold animate-fade-in delay-500">
+                        <div className="flex flex-col items-center">
+                            <span className="text-2xl text-white">10k+</span>
+                            <span className="text-[10px] uppercase tracking-widest opacity-60">Anúncios</span>
+                        </div>
+                        <div className="w-px h-10 bg-white/20" />
+                        <div className="flex flex-col items-center">
+                            <span className="text-2xl text-white">5k+</span>
+                            <span className="text-[10px] uppercase tracking-widest opacity-60">Vendas</span>
+                        </div>
+                        <div className="w-px h-10 bg-white/20" />
+                        <div className="flex flex-col items-center">
+                            <span className="text-2xl text-white">100%</span>
+                            <span className="text-[10px] uppercase tracking-widest opacity-60">Seguro</span>
+                        </div>
                     </div>
                 </div>
             </section>
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 w-full">
-                {/* Categories Section */}
-                <section className="mb-12">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-6">Categorias Populares</h2>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                        {categories.map((cat) => (
-                            <button
-                                key={cat.id}
-                                onClick={() => handleCategoryClick(cat.id)}
-                                className={`flex flex-col items-center justify-center p-6 rounded-2xl transition-all duration-200 border-2 ${filters.category === cat.id
-                                        ? 'border-blue-600 bg-blue-50 shadow-lg shadow-blue-100'
-                                        : 'border-gray-100 bg-white hover:border-blue-200 hover:shadow-md'
-                                    }`}
-                            >
-                                <span className="text-3xl mb-3">{cat.icon}</span>
-                                <span className="font-semibold text-gray-800">{cat.label}</span>
-                            </button>
-                        ))}
-                    </div>
-                </section>
-
-                {/* Active Filters */}
-                {filters.category && (
-                    <div className="mb-6 flex items-center gap-2">
-                        <span className="text-sm text-gray-500">Filtros ativos:</span>
-                        <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium flex items-center">
-                            {categories.find(c => c.id === filters.category)?.label}
+            <div id="results-section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 w-full">
+                {/* Active Filters Bar */}
+                {Object.keys(filters).length > 0 && (
+                    <div className="mb-12 bg-blue-50/50 p-6 rounded-[2.5rem] flex flex-col md:flex-row items-center justify-between gap-4 border border-blue-100/50">
+                        <div className="flex flex-wrap items-center gap-3">
+                            <span className="text-sm font-black text-blue-900/40 uppercase tracking-widest mr-2">Filtros:</span>
+                            {Object.entries(filters).map(([key, val]) => val && (
+                                <span key={key} className="px-4 py-2 bg-white text-blue-700 rounded-2xl text-xs font-black shadow-sm flex items-center border border-blue-100">
+                                    {key === 'category' ? val.toString().toLowerCase() : val.toString()}
+                                    <button
+                                        onClick={() => updateFilters({ [key]: undefined })}
+                                        className="ml-3 text-blue-300 hover:text-blue-900 transition"
+                                    >
+                                        ✕
+                                    </button>
+                                </span>
+                            ))}
+                        </div>
+                        <div className="flex items-center gap-6">
+                            <span className="text-sm font-bold text-gray-500">
+                                <span className="text-blue-600">{filteredCount}</span> de {totalCount} imóveis
+                            </span>
                             <button
                                 onClick={clearFilters}
-                                className="ml-2 hover:text-blue-900"
+                                className="text-xs font-black text-red-500 hover:text-red-700 uppercase tracking-widest transition underline underline-offset-4"
                             >
-                                ✕
+                                Limpar Tudo
                             </button>
-                        </span>
-                        <span className="text-sm text-gray-400">
-                            ({filteredCount} de {totalCount} resultados)
-                        </span>
+                        </div>
                     </div>
                 )}
 
                 {/* Listings Section */}
                 <section>
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-2xl font-bold text-gray-900">
-                            {filters.category ? 'Resultados' : 'Anúncios Recentes'}
-                        </h2>
+                    <div className="flex justify-between items-end mb-12">
+                        <div>
+                            <h2 className="text-4xl font-black text-gray-900 tracking-tight">
+                                {Object.keys(filters).length > 0 ? 'Encontramos isto para si' : 'Explorar o Mercado'}
+                            </h2>
+                            <p className="text-gray-500 font-medium mt-2">Escolha entre os melhores anúncios verificados em Angola.</p>
+                        </div>
+                        <div className="hidden md:flex gap-2">
+                            <button
+                                onClick={() => navigate('/map-search')}
+                                className="p-4 rounded-2xl bg-white border-2 border-blue-600 text-blue-600 font-black hover:bg-blue-600 hover:text-white transition shadow-lg flex items-center gap-2"
+                            >
+                                <MapIcon className="w-5 h-5" /> Ver no Mapa
+                            </button>
+                        </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
                         {listings.map((listing, index) => (
                             <div
                                 key={listing.id}
                                 className="animate-fade-in"
-                                style={{ animationDelay: `${index * 50}ms` }}
+                                style={{ animationDelay: `${index * 80}ms` }}
                             >
                                 <ListingCard
                                     listing={listing}
@@ -131,15 +140,15 @@ const HomePage: React.FC = () => {
                     </div>
 
                     {listings.length === 0 && (
-                        <div className="text-center py-20 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
-                            <span className="text-5xl mb-4 block">🔍</span>
-                            <h3 className="text-xl font-bold text-gray-800">Nenhum resultado encontrado</h3>
-                            <p className="text-gray-500 mb-6">Tente ajustar a sua pesquisa ou os filtros.</p>
+                        <div className="text-center py-32 bg-gray-50 rounded-[4rem] border-2 border-dashed border-gray-200 mt-12">
+                            <SearchIcon className="w-16 h-16 text-gray-300 mx-auto mb-6" />
+                            <h3 className="text-3xl font-black text-gray-800 mb-4">Nenhum resultado</h3>
+                            <p className="text-gray-500 mb-10 max-w-sm mx-auto font-medium text-lg">Não encontramos anúncios com esses critérios. Tente uma busca mais ampla.</p>
                             <button
                                 onClick={clearFilters}
-                                className="text-blue-600 font-bold hover:underline"
+                                className="bg-blue-600 text-white px-10 py-4 rounded-2xl font-black hover:bg-blue-700 transition shadow-xl"
                             >
-                                Limpar filtros
+                                Ver todos os anúncios
                             </button>
                         </div>
                     )}
@@ -150,3 +159,4 @@ const HomePage: React.FC = () => {
 };
 
 export default HomePage;
+
