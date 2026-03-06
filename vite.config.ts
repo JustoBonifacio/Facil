@@ -18,7 +18,12 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, 'src'),
+        // Fix for react-easy-crop which depends on the broken normalize-wheel package
+        'normalize-wheel': 'normalize-wheel-es',
       }
+    },
+    optimizeDeps: {
+      include: ['lucide-react', 'react-easy-crop'],
     },
     build: {
       outDir: 'dist',

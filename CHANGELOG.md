@@ -1,24 +1,16 @@
-# Changelog - Facil Platform
+## [Session: 2026-02-22] - Stability & Performance Audit
 
-## [Session: 2026-02-18] - Professionalization & Trust Systems
+### 🚀 Listing Creation Workflow
+- **Submission Stabilization**: Resolved a critical race condition where the creation form would unmount/reset during the publication phase.
+- **Async Synchronization**: Implemented `await` patterns for database insertions, ensuring the user is only redirected after absolute confirmation of success.
+- **Smart Audit System**: Integrated a global error notification banner to display real-time feedback from Supabase API failures.
+- **Image Validation**: Enforced a mandatory upload rule (at least 1 photo) to prevent incomplete listings.
+- **Navigation Polish**: Added automatic "Scroll-to-top" in multi-step transitions for better mobile UX.
 
-### 🛡️ Trust & Safety (Verification Center)
-- **New Feature**: Added a dedicated **Verification Center** tab in the User Dashboard.
-- **Biometric Face Scan**: Implemented a real-time face recognition interface using the device camera, featuring a premium laser scanning animation and simulated AI analysis.
-- **Dynamic Document Management**: Users can now upload, view, and replace (Edit) verification documents including Identity Card (BI) and Tax ID (NIF).
-- **Progress Tracking**: Enhanced the dashboard with a visual trust meter (Progress Bar) that incentivizes users to complete their profile verification.
-- **Privacy First**: Added encrypted data protection notices within the verification flow.
-
-### 🎨 UI/UX Enhancements (Pro Max Aesthetic)
-- **Lucide Icon Integration**: Replaced all occurrences of basic emojis and standard icons with professional, monochromatic Lucide-React icons across the platform (Navbar, ListingCards, SearchBar, Inbox, Dashboard).
-- **Unified Design Language**: Applied consistent branding using curated indigo/blue gradients and ultra-rounded corners (`rounded-[2.5rem]`).
-- **Interactive States**: Added hover effects, micro-animations, and scanning overlays to make the interface feel "alive" and responsive.
-
-### 🧹 Code Quality & Stability
-- **Global Syntax Fixes**: Resolved critical JSX errors ("unterminated template literals") and restored file integrity in `DashboardPage.tsx`.
-- **Refactoring**: Unified multiple hidden file inputs into a single, maintainable block at the component root.
-- **State Management**: Optimized local states for file uploads, cropping, and biometric scanning steps.
-- **Cleanup**: Removed outdated verification steps (Address Verification) to streamline the user onboarding experience.
+### 🧹 System Health
+- **Session Persistence**: Optimized the ProtectedRoute logic to check localStorage before redirecting, eliminating the "flicker" during initial app load.
+- **Loading UX**: Replaced the "blank screen" during session validation with a high-fidelity "Loading Page" with progress status.
+- **Link Integrity**: Fixed the "Vender" link in the main Navbar to correctly route to the creation portal.
 
 ---
-*Status: All systems operational. Features validated and responsive.*
+*Status: Creation engine stabilized. Deployment ready.*
