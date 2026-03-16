@@ -1,209 +1,231 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useApp } from '../contexts/AppContext';
-import { ListingStatus } from '../types';
-import { formatDate } from '../utils/helpers';
+import { useAdminDashboard } from '../features/admin/hooks/useAdminDashboard';
+import { ListingStatus } from '../shared/types';
+import { formatDate } from '../shared/utils/helpers';
+import {
+    Users, Clock, Clipboard, Search,
+    Zap, Check, X, ShieldCheck,
+    ChevronRight, ArrowUpRight, Filter,
+    Eye
+} from 'lucide-react';
 
 const AdminDashboardPage: React.FC = () => {
     const navigate = useNavigate();
-    const { state, actions } = useApp();
-    const [activeTab, setActiveTab] = useState<'users' | 'listings'>('users');
+    const {
+        state, actions, activeTab, setActiveTab,
+        pendingUsers, pendingListings, stats, user
+    } = useAdminDashboard();
 
-    if (!state.user || state.user.role !== 'ADMIN') {
-        return null;
-    }
+    if (!user || user.role !== 'ADMIN') return null;
 
-    const pendingUsers = state.users.filter(u => !u.isVerified && u.role !== 'ADMIN');
-    const pendingListings = state.listings.filter(l => l.status === ListingStatus.PENDING_REVIEW);
-
-    const stats = [
-        { label: 'Total Utilizadores', value: state.users.length, icon: '👥', color: 'blue' },
-        { label: 'Verificações Pendentes', value: pendingUsers.length, icon: '⏳', color: 'amber' },
-        { label: 'Total Anúncios', value: state.listings.length, icon: '📋', color: 'emerald' },
-        { label: 'Em Revisão', value: pendingListings.length, icon: '🔍', color: 'purple' },
-    ];
+    const iconMap: Record<string, React.ReactNode> = {
+        Users: <Users className="w-8 h-8" />,
+        Clock: <Clock className="w-8 h-8" />,
+        Clipboard: <Clipboard className="w-8 h-8" />,
+        Search: <Search className="w-8 h-8" />,
+    };
 
     return (
-        <div className="max-w-7xl mx-auto px-4 py-8">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-10">
-                <div>
-                    <h1 className="text-3xl font-extrabold text-gray-900">Painel Administrativo</h1>
-                    <p className="text-gray-500">Bem-vindo, {state.user.name}</p>
-                </div>
-                <button
-                    onClick={() => navigate('/admin/god-mode')}
-                    className="bg-gray-900 text-white px-6 py-3 rounded-xl font-bold hover:bg-black transition flex items-center gap-2"
-                >
-                    ⚡ God Mode
-                </button>
-            </div>
-
-            {/* Stats */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-                {stats.map((stat) => (
-                    <div
-                        key={stat.label}
-                        className={`p-6 rounded-3xl border shadow-sm bg-white hover:shadow-md transition`}
-                    >
-                        <div className="text-3xl mb-3">{stat.icon}</div>
-                        <div className="text-3xl font-black text-gray-900">{stat.value}</div>
-                        <div className="text-sm text-gray-500 uppercase tracking-wider font-medium mt-1">{stat.label}</div>
-                    </div>
-                ))}
-            </div>
-
-            {/* Tabs */}
-            <div className="flex gap-2 mb-8">
-                <button
-                    onClick={() => setActiveTab('users')}
-                    className={`px-6 py-3 rounded-xl font-bold transition ${activeTab === 'users'
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                        }`}
-                >
-                    Verificação de Utilizadores
-                    {pendingUsers.length > 0 && (
-                        <span className="ml-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
-                            {pendingUsers.length}
-                        </span>
-                    )}
-                </button>
-                <button
-                    onClick={() => setActiveTab('listings')}
-                    className={`px-6 py-3 rounded-xl font-bold transition ${activeTab === 'listings'
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                        }`}
-                >
-                    Moderação de Anúncios
-                </button>
-            </div>
-
-            {/* Users Tab */}
-            {activeTab === 'users' && (
-                <div className="bg-white rounded-3xl border border-gray-100 overflow-hidden">
-                    <div className="grid grid-cols-5 gap-4 p-4 bg-gray-50 border-b font-bold text-xs uppercase tracking-wider text-gray-500">
-                        <div>Utilizador</div>
-                        <div>Email</div>
-                        <div>Role</div>
-                        <div>Data de Registo</div>
-                        <div className="text-right">Ações</div>
+        <div className="bg-[#f8fafc] min-h-screen pb-24">
+            {/* Header Area Area */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-16">
+                    <div>
+                        <div className="flex items-center gap-3 mb-4">
+                            <span className="h-1.5 w-8 bg-blue-600 rounded-full"></span>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">Gestão Central do Ecossistema</p>
+                        </div>
+                        <h1 className="text-5xl font-black text-gray-900 tracking-tight leading-none">Cerebro Admin</h1>
                     </div>
 
-                    {state.users.filter(u => u.role !== 'ADMIN').map((user) => (
-                        <div
-                            key={user.id}
-                            className="grid grid-cols-5 gap-4 p-4 border-b border-gray-50 items-center hover:bg-gray-50 transition"
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={() => navigate('/admin/god-mode')}
+                            className="bg-black text-white px-8 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-2xl shadow-gray-200 hover:bg-zinc-800 transition-all active:scale-95 flex items-center gap-3 group"
                         >
-                            <div className="flex items-center">
-                                <img src={user.avatar} alt="" className="h-10 w-10 rounded-full mr-3" />
+                            <Zap className="w-5 h-5 group-hover:fill-current transition-all" /> God Mode
+                        </button>
+                    </div>
+                </div>
+
+                {/* Dashboard Stats Stats */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
+                    {stats.map((stat) => (
+                        <div
+                            key={stat.label}
+                            className="bg-white p-10 rounded-[3.5rem] border border-gray-100 shadow-sm relative overflow-hidden group hover:shadow-2xl hover:shadow-blue-50 transition-all duration-500"
+                        >
+                            <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
+                                {iconMap[stat.icon]}
+                            </div>
+                            <div className="flex items-center gap-4 mb-8">
+                                <div className={`h-14 w-14 rounded-2xl flex items-center justify-center bg-gray-50 text-gray-400 group-hover:scale-110 transition-transform`}>
+                                    {iconMap[stat.icon]}
+                                </div>
                                 <div>
-                                    <p className="font-bold text-gray-900">{user.name}</p>
-                                    {user.isVerified && (
-                                        <span className="text-[10px] text-blue-600 font-bold">✅ Verificado</span>
-                                    )}
+                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{stat.label}</p>
+                                    <p className="text-3xl font-black text-gray-900 tracking-tight">{stat.value.toLocaleString()}</p>
                                 </div>
                             </div>
-                            <div className="text-gray-600 text-sm">{user.email}</div>
-                            <div>
-                                <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${user.role === 'OWNER' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'
-                                    }`}>
-                                    {user.role}
-                                </span>
-                            </div>
-                            <div className="text-gray-500 text-sm">
-                                {user.joinedAt ? formatDate(user.joinedAt, 'short') : 'N/A'}
-                            </div>
-                            <div className="text-right">
-                                {!user.isVerified ? (
-                                    <button
-                                        onClick={() => actions.verifyUser(user.id)}
-                                        className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-emerald-700 transition"
-                                    >
-                                        ✓ Verificar
-                                    </button>
-                                ) : (
-                                    <span className="text-gray-400 text-sm">Verificado</span>
-                                )}
+                            <div className="flex items-center text-[10px] font-black text-blue-600 uppercase tracking-widest gap-2">
+                                <ArrowUpRight className="w-3 h-3" /> Ver Detalhes
                             </div>
                         </div>
                     ))}
                 </div>
-            )}
 
-            {/* Listings Tab */}
-            {activeTab === 'listings' && (
-                <div className="bg-white rounded-3xl border border-gray-100 overflow-hidden">
-                    <div className="grid grid-cols-5 gap-4 p-4 bg-gray-50 border-b font-bold text-xs uppercase tracking-wider text-gray-500">
-                        <div>Anúncio</div>
-                        <div>Proprietário</div>
-                        <div>Categoria</div>
-                        <div>Status</div>
-                        <div className="text-right">Ações</div>
+                {/* Main Content Area Area */}
+                <div className="bg-white rounded-[4rem] shadow-sm border border-gray-100 overflow-hidden relative">
+                    {/* Secondary Navigation Navigation */}
+                    <div className="flex items-center border-b border-gray-50 p-8 md:px-12 gap-10">
+                        <button
+                            onClick={() => setActiveTab('users')}
+                            className={`relative py-6 font-black text-xs uppercase tracking-[0.2em] transition-all group ${activeTab === 'users' ? 'text-blue-600' : 'text-gray-400 hover:text-gray-900'
+                                }`}
+                        >
+                            Verificação de Utilizadores
+                            {pendingUsers.length > 0 && (
+                                <span className="absolute -top-1 -right-4 h-5 w-5 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center shadow-lg border-2 border-white">
+                                    {pendingUsers.length}
+                                </span>
+                            )}
+                            {activeTab === 'users' && <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-blue-600 rounded-t-full shadow-lg"></div>}
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('listings')}
+                            className={`relative py-6 font-black text-xs uppercase tracking-[0.2em] transition-all group ${activeTab === 'listings' ? 'text-blue-600' : 'text-gray-400 hover:text-gray-900'
+                                }`}
+                        >
+                            Controlo de Anúncios
+                            {activeTab === 'listings' && <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-blue-600 rounded-t-full shadow-lg"></div>}
+                        </button>
+                        <div className="ml-auto hidden md:flex items-center gap-4">
+                            <div className="flex items-center px-6 py-3 bg-gray-50 rounded-2xl gap-3 text-gray-400 font-black text-[10px] uppercase tracking-widest">
+                                <Filter className="w-4 h-4" /> Filtros Activos
+                            </div>
+                        </div>
                     </div>
 
-                    {state.listings.map((listing) => {
-                        const owner = state.users.find(u => u.id === listing.ownerId);
+                    {/* Content Table Table */}
+                    <div className="p-8 md:p-12">
+                        {activeTab === 'users' ? (
+                            <div className="space-y-4">
+                                {state.users.filter(u => u.role !== 'ADMIN').map((u) => (
+                                    <div key={u.id} className="group p-6 rounded-3xl border border-gray-50 hover:bg-gray-50/50 hover:border-blue-100 flex items-center justify-between transition-all duration-300">
+                                        <div className="flex items-center gap-6">
+                                            <div className="relative">
+                                                <img src={u.avatar} className="h-16 w-16 rounded-2xl border-4 border-white shadow-lg object-cover" alt="" />
+                                                {u.isVerified && (
+                                                    <div className="absolute -bottom-1 -right-1 bg-blue-600 text-white rounded-full p-1 border-2 border-white shadow-sm">
+                                                        <ShieldCheck className="w-3 h-3" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div>
+                                                <p className="text-lg font-black text-gray-900">{u.name}</p>
+                                                <p className="text-xs font-bold text-gray-400">{u.email}</p>
+                                            </div>
+                                        </div>
 
-                        return (
-                            <div
-                                key={listing.id}
-                                className="grid grid-cols-5 gap-4 p-4 border-b border-gray-50 items-center hover:bg-gray-50 transition"
-                            >
-                                <div className="flex items-center">
-                                    <img src={listing.images[0]} alt="" className="h-12 w-16 rounded-lg object-cover mr-3" />
-                                    <p className="font-bold text-gray-900 line-clamp-1">{listing.title}</p>
-                                </div>
-                                <div className="flex items-center text-sm text-gray-600">
-                                    <img src={owner?.avatar} alt="" className="h-6 w-6 rounded-full mr-2" />
-                                    {owner?.name}
-                                </div>
-                                <div>
-                                    <span className="px-2 py-1 bg-gray-100 rounded-full text-[10px] font-bold uppercase text-gray-600">
-                                        {listing.category}
-                                    </span>
-                                </div>
-                                <div>
-                                    <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${listing.status === ListingStatus.AVAILABLE
-                                            ? 'bg-emerald-100 text-emerald-700'
-                                            : listing.status === ListingStatus.PENDING_REVIEW
-                                                ? 'bg-amber-100 text-amber-700'
-                                                : 'bg-gray-100 text-gray-600'
-                                        }`}>
-                                        {listing.status}
-                                    </span>
-                                </div>
-                                <div className="text-right space-x-2">
-                                    <button
-                                        onClick={() => navigate(`/listing/${listing.id}`)}
-                                        className="text-blue-600 text-sm font-medium hover:underline"
-                                    >
-                                        Ver
-                                    </button>
-                                    {listing.status === ListingStatus.PENDING_REVIEW && (
-                                        <>
-                                            <button
-                                                onClick={() => actions.moderateListing(listing.id, ListingStatus.AVAILABLE)}
-                                                className="text-emerald-600 text-sm font-medium hover:underline"
-                                            >
-                                                Aprovar
-                                            </button>
-                                            <button
-                                                onClick={() => actions.moderateListing(listing.id, ListingStatus.PAUSED)}
-                                                className="text-red-600 text-sm font-medium hover:underline"
-                                            >
-                                                Rejeitar
-                                            </button>
-                                        </>
-                                    )}
-                                </div>
+                                        <div className="flex items-center gap-12">
+                                            <div className="hidden lg:block text-right">
+                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Nível de Acesso</p>
+                                                <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest ${u.role === 'OWNER' ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600'
+                                                    }`}>
+                                                    {u.role === 'OWNER' ? 'PROPRIETÁRIO' : 'CLIENTE'}
+                                                </span>
+                                            </div>
+
+                                            <div className="hidden xl:block text-right">
+                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Entrou em</p>
+                                                <p className="text-sm font-black text-gray-800">{formatDate(u.joinedAt || new Date().toISOString(), 'short')}</p>
+                                            </div>
+
+                                            <div className="flex items-center gap-3">
+                                                {!u.isVerified ? (
+                                                    <button
+                                                        onClick={() => actions.verifyUser(u.id)}
+                                                        className="flex items-center gap-2 bg-emerald-600 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-emerald-50 hover:bg-emerald-700 transition"
+                                                    >
+                                                        <Check className="w-4 h-4" /> Aprovar
+                                                    </button>
+                                                ) : (
+                                                    <button className="flex items-center gap-2 bg-gray-100 text-gray-400 px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest cursor-not-allowed">
+                                                        Verificado
+                                                    </button>
+                                                )}
+                                                <button className="p-3 bg-white border border-gray-100 rounded-2xl text-gray-400 hover:text-red-600 transition shadow-sm">
+                                                    <X className="w-5 h-5" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
-                        );
-                    })}
+                        ) : (
+                            <div className="space-y-4">
+                                {state.listings.map((listing) => {
+                                    const owner = state.users.find(u => u.id === listing.ownerId);
+                                    return (
+                                        <div key={listing.id} className="group p-6 rounded-3xl border border-gray-50 hover:bg-gray-100/50 hover:border-blue-100 flex items-center justify-between transition-all duration-300">
+                                            <div className="flex items-center gap-6">
+                                                <img src={listing.images[0]} className="h-20 w-32 rounded-2xl object-cover shadow-lg" alt="" />
+                                                <div>
+                                                    <p className="text-lg font-black text-gray-900 line-clamp-1">{listing.title}</p>
+                                                    <div className="flex items-center gap-2 mt-2">
+                                                        <img src={owner?.avatar} className="h-5 w-5 rounded-full object-cover" alt="" />
+                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Publicado por {owner?.name}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center gap-12">
+                                                <div className="hidden lg:block text-right">
+                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Status Actual</p>
+                                                    <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest ${listing.status === ListingStatus.AVAILABLE ? 'bg-emerald-50 text-emerald-600' :
+                                                            listing.status === ListingStatus.PENDING_REVIEW ? 'bg-amber-50 text-amber-600' :
+                                                                'bg-gray-100 text-gray-400'
+                                                        }`}>
+                                                        {listing.status === ListingStatus.AVAILABLE ? 'PUBLICADO' :
+                                                            listing.status === ListingStatus.PENDING_REVIEW ? 'EM REVISÃO' : listing.status}
+                                                    </span>
+                                                </div>
+
+                                                <div className="flex items-center gap-3">
+                                                    <button
+                                                        onClick={() => navigate(`/listing/${listing.id}`)}
+                                                        className="p-4 bg-white border border-gray-100 text-gray-400 rounded-2xl hover:text-blue-600 transition"
+                                                    >
+                                                        <Eye className="w-5 h-5" />
+                                                    </button>
+                                                    {listing.status === ListingStatus.PENDING_REVIEW && (
+                                                        <>
+                                                            <button
+                                                                onClick={() => actions.moderateListing(listing.id, ListingStatus.AVAILABLE)}
+                                                                className="bg-blue-600 text-white px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-blue-100 hover:bg-blue-700 transition"
+                                                            >
+                                                                Liberar
+                                                            </button>
+                                                            <button
+                                                                onClick={() => actions.moderateListing(listing.id, ListingStatus.PAUSED)}
+                                                                className="bg-red-50 text-red-600 px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-red-600 hover:text-white transition"
+                                                            >
+                                                                Pausar
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
                 </div>
-            )}
+            </div>
         </div>
     );
 };

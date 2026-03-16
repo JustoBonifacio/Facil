@@ -1,5 +1,5 @@
 
-import { User, Listing, ListingCategory, ListingStatus, TransactionType, UserRole } from '../types';
+import { User, Listing, ListingCategory, ListingStatus, TransactionType, UserRole } from '../shared/types';
 
 export const MOCK_USERS: User[] = [
     {

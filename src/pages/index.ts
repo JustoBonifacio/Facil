@@ -8,3 +8,4 @@ export { default as DashboardPage } from './DashboardPage';
 export { default as InboxPage } from './InboxPage';
 export { default as AdminDashboardPage } from './AdminDashboardPage';
 export { default as GodModePage } from './GodModePage';
+export { default as NotFoundPage } from './NotFoundPage';

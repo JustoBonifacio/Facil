@@ -1,296 +1,234 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useApp } from '../contexts/AppContext';
-import { Listing, ListingCategory, TransactionType, ListingStatus } from '../types';
+import { useCreateListing } from '../features/listings/hooks/useCreateListing';
+import { ListingCategory, TransactionType } from '../shared/types';
 import { CITIES, VALIDATION, CATEGORY_LABELS } from '../constants';
+import { ArrowLeft, Box, MapPin, Check, Plus } from 'lucide-react';
 
 const CreateListingPage: React.FC = () => {
     const navigate = useNavigate();
-    const { state, actions } = useApp();
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [currentStep, setCurrentStep] = useState(1);
+    const {
+        formData, errors, currentStep, isSubmitting,
+        handleNext, handleBack, handleSubmit, updateField,
+        user
+    } = useCreateListing();
 
-    const [formData, setFormData] = useState({
-        title: '',
-        description: '',
-        price: '',
-        category: ListingCategory.HOUSE,
-        transactionType: TransactionType.RENT,
-        neighborhood: '',
-        city: 'Luanda',
-        features: '',
-    });
-
-    const [errors, setErrors] = useState<Record<string, string>>({});
-
-    const validateStep = (step: number): boolean => {
-        const newErrors: Record<string, string> = {};
-
-        if (step === 1) {
-            if (!formData.title || formData.title.length < VALIDATION.TITLE_MIN_LENGTH) {
-                newErrors.title = `Título deve ter pelo menos ${VALIDATION.TITLE_MIN_LENGTH} caracteres`;
-            }
-            if (!formData.description || formData.description.length < VALIDATION.DESCRIPTION_MIN_LENGTH) {
-                newErrors.description = `Descrição deve ter pelo menos ${VALIDATION.DESCRIPTION_MIN_LENGTH} caracteres`;
-            }
-        }
-
-        if (step === 2) {
-            if (!formData.price || Number(formData.price) < VALIDATION.MIN_PRICE) {
-                newErrors.price = `Preço mínimo é ${VALIDATION.MIN_PRICE.toLocaleString()} AOA`;
-            }
-            if (!formData.neighborhood) {
-                newErrors.neighborhood = 'Bairro é obrigatório';
-            }
-        }
-
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
-
-    const handleNext = () => {
-        if (validateStep(currentStep)) {
-            setCurrentStep(prev => prev + 1);
-        }
-    };
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        if (!validateStep(currentStep)) return;
-        if (!state.user) return;
-
-        setIsSubmitting(true);
-
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        const newListing: Listing = {
-            id: `l_${Date.now()}`,
-            ownerId: state.user.id,
-            title: formData.title,
-            description: formData.description,
-            price: Number(formData.price),
-            currency: 'AOA',
-            category: formData.category,
-            transactionType: formData.transactionType,
-            status: ListingStatus.AVAILABLE,
-            images: [`https://picsum.photos/seed/${Date.now()}/800/600`],
-            location: {
-                city: formData.city,
-                neighborhood: formData.neighborhood,
-                coords: [-8.81, 13.23],
-            },
-            views: 0,
-            createdAt: new Date().toISOString(),
-            features: formData.features.split(',').map(f => f.trim()).filter(f => f !== ''),
-        };
-
-        actions.addListing(newListing);
-        navigate('/dashboard');
-    };
-
-    const updateField = (field: string, value: string) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
-        if (errors[field]) {
-            setErrors(prev => ({ ...prev, [field]: '' }));
-        }
-    };
+    if (!user) return null;
 
     return (
-        <div className="max-w-3xl mx-auto px-4 py-12">
+        <div className="max-w-4xl mx-auto px-4 py-16 bg-gray-50 min-h-screen">
             <button
                 onClick={() => navigate(-1)}
-                className="text-gray-500 hover:text-blue-600 mb-6 flex items-center font-medium"
+                className="group flex items-center text-gray-500 hover:text-blue-600 mb-10 font-black uppercase tracking-widest text-[10px] transition-all"
             >
-                ← Cancelar
+                <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" /> Cancelar Criação
             </button>
 
-            <div className="bg-white p-10 rounded-[40px] shadow-2xl border border-gray-100">
-                {/* Progress Steps */}
-                <div className="flex items-center justify-center mb-10">
+            <div className="bg-white p-12 md:p-16 rounded-xl shadow-2xl border border-slate-100 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-facil-blue/5 rounded-full blur-3xl -mr-20 -mt-20"></div>
+
+                {/* Progress Indicators */}
+                <div className="flex items-center justify-center mb-16 gap-4">
                     {[1, 2, 3].map((step) => (
-                        <React.Fragment key={step}>
-                            <div className={`flex items-center justify-center h-10 w-10 rounded-full font-bold text-sm transition ${currentStep >= step
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-gray-100 text-gray-400'
+                        <div key={step} className="flex items-center">
+                            <div className={`h-12 w-12 rounded-xl flex items-center justify-center font-black text-lg transition-all shadow-lg ${currentStep >= step ? 'bg-facil-blue text-white shadow-facil-blue/20' : 'bg-slate-100 text-slate-400'
                                 }`}>
                                 {step}
                             </div>
                             {step < 3 && (
-                                <div className={`h-1 w-16 mx-2 rounded transition ${currentStep > step ? 'bg-blue-600' : 'bg-gray-100'
+                                <div className={`h-1 w-12 mx-2 rounded-full transition-all duration-500 ${currentStep > step ? 'bg-facil-blue' : 'bg-slate-100'
                                     }`} />
                             )}
-                        </React.Fragment>
+                        </div>
                     ))}
                 </div>
 
-                <form onSubmit={handleSubmit}>
+                <form onSubmit={handleSubmit} className="space-y-12">
                     {/* Step 1: Basic Info */}
                     {currentStep === 1 && (
-                        <div className="space-y-6 animate-fade-in">
-                            <div className="text-center mb-8">
-                                <h1 className="text-3xl font-black text-gray-900">Informações Básicas</h1>
-                                <p className="text-gray-500">Descreva o seu anúncio</p>
+                        <div className="animate-in slide-in-from-right-10 duration-500">
+                            <div className="mb-12">
+                                <h1 className="text-4xl font-black text-gray-900 mb-3 tracking-tight">O que está a vender?</h1>
+                                <p className="text-gray-500 font-medium">Comece por dar um título impactante ao seu anúncio.</p>
                             </div>
 
-                            <div>
-                                <label className="block text-xs font-black text-gray-700 uppercase tracking-widest mb-2">
-                                    Título do Anúncio *
-                                </label>
-                                <input
-                                    className={`w-full p-4 bg-gray-50 rounded-2xl border-2 ${errors.title ? 'border-red-300' : 'border-transparent'} focus:border-blue-500 focus:bg-white outline-none transition`}
-                                    placeholder="Ex: Vivenda T4 no Condomínio Jardim de Rosas"
-                                    value={formData.title}
-                                    onChange={e => updateField('title', e.target.value)}
-                                />
-                                {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title}</p>}
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-6">
+                            <div className="space-y-8">
                                 <div>
-                                    <label className="block text-xs font-black text-gray-700 uppercase tracking-widest mb-2">
-                                        Categoria *
-                                    </label>
-                                    <select
-                                        className="w-full p-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-blue-500 outline-none transition"
-                                        value={formData.category}
-                                        onChange={e => updateField('category', e.target.value)}
-                                    >
-                                        {Object.values(ListingCategory).map(cat => (
-                                            <option key={cat} value={cat}>{CATEGORY_LABELS[cat] || cat}</option>
-                                        ))}
-                                    </select>
+                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-3">Título Profissional *</label>
+                                    <input
+                                        className={`w-full p-6 bg-slate-50 rounded-xl border-2 font-bold text-lg outline-none transition-all placeholder:text-slate-300 ${errors.title ? 'border-rose-500 focus:border-rose-500' : 'border-transparent focus:border-facil-blue focus:bg-white focus:shadow-xl focus:shadow-facil-blue/5'
+                                            }`}
+                                        placeholder="Ex: Vivenda T4 Luxuosa no Talatona..."
+                                        value={formData.title}
+                                        onChange={e => updateField('title', e.target.value)}
+                                    />
+                                    {errors.title && <p className="text-rose-500 text-xs mt-2 font-bold">{errors.title}</p>}
                                 </div>
-                                <div>
-                                    <label className="block text-xs font-black text-gray-700 uppercase tracking-widest mb-2">
-                                        Tipo de Transação *
-                                    </label>
-                                    <select
-                                        className="w-full p-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-blue-500 outline-none transition"
-                                        value={formData.transactionType}
-                                        onChange={e => updateField('transactionType', e.target.value)}
-                                    >
-                                        <option value={TransactionType.RENT}>Arrendar</option>
-                                        <option value={TransactionType.BUY}>Vender</option>
-                                    </select>
-                                </div>
-                            </div>
 
-                            <div>
-                                <label className="block text-xs font-black text-gray-700 uppercase tracking-widest mb-2">
-                                    Descrição Detalhada *
-                                </label>
-                                <textarea
-                                    rows={5}
-                                    className={`w-full p-4 bg-gray-50 rounded-2xl border-2 ${errors.description ? 'border-red-300' : 'border-transparent'} focus:border-blue-500 focus:bg-white outline-none transition resize-none`}
-                                    placeholder="Descreva o estado, áreas, comodidades, proximidade a serviços..."
-                                    value={formData.description}
-                                    onChange={e => updateField('description', e.target.value)}
-                                />
-                                {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description}</p>}
-                                <p className="text-xs text-gray-400 mt-1">{formData.description.length} / {VALIDATION.DESCRIPTION_MIN_LENGTH} min</p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div className="relative group">
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Categoria *</label>
+                                        <select
+                                            className="w-full p-6 bg-slate-50 rounded-xl border-2 border-transparent font-bold outline-none appearance-none cursor-pointer focus:border-facil-blue focus:bg-white transition-all shadow-sm hover:border-slate-200"
+                                            value={formData.category}
+                                            onChange={e => updateField('category', e.target.value)}
+                                        >
+                                            {Object.values(ListingCategory).map(cat => (
+                                                <option key={cat} value={cat}>{CATEGORY_LABELS[cat] || cat}</option>
+                                            ))}
+                                        </select>
+                                        <div className="absolute right-6 top-1/2 mt-3 pointer-events-none text-slate-400">▼</div>
+                                    </div>
+                                    <div className="relative group">
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Negócio *</label>
+                                        <select
+                                            className="w-full p-6 bg-slate-50 rounded-xl border-2 border-transparent font-bold outline-none appearance-none cursor-pointer focus:border-facil-blue focus:bg-white transition-all shadow-sm hover:border-slate-200"
+                                            value={formData.transactionType}
+                                            onChange={e => updateField('transactionType', e.target.value)}
+                                        >
+                                            <option value={TransactionType.RENT}>Arrendar / Alugar</option>
+                                            <option value={TransactionType.BUY}>Venda Directa</option>
+                                        </select>
+                                        <div className="absolute right-6 top-1/2 mt-3 pointer-events-none text-slate-400">▼</div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Descrição Detalhada *</label>
+                                    <textarea
+                                        rows={6}
+                                        className={`w-full p-6 bg-slate-50 rounded-xl border-2 font-medium outline-none transition-all placeholder:text-slate-300 resize-none ${errors.description ? 'border-rose-500 focus:border-rose-500' : 'border-transparent focus:border-facil-blue focus:bg-white focus:shadow-xl'
+                                            }`}
+                                        placeholder="Áreas, comodidades, anexos, segurança, proximidade a serviços..."
+                                        value={formData.description}
+                                        onChange={e => updateField('description', e.target.value)}
+                                    />
+                                    <div className="flex justify-between mt-2">
+                                        {errors.description && <p className="text-rose-500 text-xs font-bold">{errors.description}</p>}
+                                        <p className="text-[10px] text-slate-400 font-black ml-auto">{formData.description.length} caracteres</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}
 
                     {/* Step 2: Location & Price */}
                     {currentStep === 2 && (
-                        <div className="space-y-6 animate-fade-in">
-                            <div className="text-center mb-8">
-                                <h1 className="text-3xl font-black text-gray-900">Localização e Preço</h1>
-                                <p className="text-gray-500">Onde está e quanto custa</p>
+                        <div className="animate-in slide-in-from-right-10 duration-500">
+                            <div className="mb-12">
+                                <h1 className="text-4xl font-black text-gray-900 mb-3 tracking-tight">Preço e Local</h1>
+                                <p className="text-gray-500 font-medium">Defina o valor de mercado e a localização exata.</p>
                             </div>
 
-                            <div>
-                                <label className="block text-xs font-black text-gray-700 uppercase tracking-widest mb-2">
-                                    Preço (AOA) *
-                                </label>
-                                <input
-                                    type="number"
-                                    className={`w-full p-4 bg-gray-50 rounded-2xl border-2 ${errors.price ? 'border-red-300' : 'border-transparent'} focus:border-blue-500 focus:bg-white outline-none transition text-2xl font-bold`}
-                                    placeholder="0"
-                                    value={formData.price}
-                                    onChange={e => updateField('price', e.target.value)}
-                                />
-                                {errors.price && <p className="text-red-500 text-xs mt-1">{errors.price}</p>}
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-6">
+                            <div className="space-y-8">
                                 <div>
-                                    <label className="block text-xs font-black text-gray-700 uppercase tracking-widest mb-2">
-                                        Cidade *
-                                    </label>
-                                    <select
-                                        className="w-full p-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-blue-500 outline-none transition"
-                                        value={formData.city}
-                                        onChange={e => updateField('city', e.target.value)}
-                                    >
-                                        {CITIES.map(city => (
-                                            <option key={city} value={city}>{city}</option>
-                                        ))}
-                                    </select>
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Valor Pretendido (AOA) *</label>
+                                    <div className="relative">
+                                        <input
+                                            type="number"
+                                            className={`w-full p-8 bg-slate-900 text-white rounded-xl font-black text-4xl outline-none focus:ring-4 focus:ring-facil-blue/20 transition-all ${errors.price ? 'ring-2 ring-rose-500' : ''
+                                                }`}
+                                            placeholder="0"
+                                            value={formData.price}
+                                            onChange={e => updateField('price', e.target.value)}
+                                        />
+                                        <span className="absolute right-8 top-1/2 -translate-y-1/2 text-slate-500 font-black text-xl">Kz</span>
+                                    </div>
+                                    {errors.price && <p className="text-rose-500 text-xs mt-3 font-bold">{errors.price}</p>}
                                 </div>
-                                <div>
-                                    <label className="block text-xs font-black text-gray-700 uppercase tracking-widest mb-2">
-                                        Bairro *
-                                    </label>
-                                    <input
-                                        className={`w-full p-4 bg-gray-50 rounded-2xl border-2 ${errors.neighborhood ? 'border-red-300' : 'border-transparent'} focus:border-blue-500 focus:bg-white outline-none transition`}
-                                        placeholder="Ex: Talatona"
-                                        value={formData.neighborhood}
-                                        onChange={e => updateField('neighborhood', e.target.value)}
-                                    />
-                                    {errors.neighborhood && <p className="text-red-500 text-xs mt-1">{errors.neighborhood}</p>}
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Província / Cidade *</label>
+                                        <select
+                                            className="w-full p-6 bg-slate-50 rounded-xl border-2 border-transparent font-bold outline-none focus:border-facil-blue focus:bg-white transition-all shadow-sm"
+                                            value={formData.city}
+                                            onChange={e => updateField('city', e.target.value)}
+                                        >
+                                            {CITIES.map(city => (
+                                                <option key={city} value={city}>{city}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Bairro / Condomínio *</label>
+                                        <div className="relative">
+                                            <input
+                                                className={`w-full p-6 pl-14 bg-slate-50 rounded-xl border-2 font-bold outline-none transition-all ${errors.neighborhood ? 'border-rose-500' : 'border-transparent focus:border-facil-blue focus:bg-white'
+                                                    }`}
+                                                placeholder="Ex: Talatona"
+                                                value={formData.neighborhood}
+                                                onChange={e => updateField('neighborhood', e.target.value)}
+                                            />
+                                            <MapPin className="absolute left-6 top-1/2 -translate-y-1/2 text-facil-blue w-5 h-5" />
+                                        </div>
+                                        {errors.neighborhood && <p className="text-rose-500 text-xs mt-2 font-bold">{errors.neighborhood}</p>}
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {/* Step 3: Features & Review */}
+                    {/* Step 3: Features & Finalization */}
                     {currentStep === 3 && (
-                        <div className="space-y-6 animate-fade-in">
-                            <div className="text-center mb-8">
-                                <h1 className="text-3xl font-black text-gray-900">Características</h1>
-                                <p className="text-gray-500">Adicione os detalhes finais</p>
+                        <div className="animate-in slide-in-from-right-10 duration-500">
+                            <div className="mb-12">
+                                <h1 className="text-4xl font-black text-gray-900 mb-3 tracking-tight">Mimos e Extras</h1>
+                                <p className="text-gray-500 font-medium">Destaque o que torna o seu imóvel especial.</p>
                             </div>
 
-                            <div>
-                                <label className="block text-xs font-black text-gray-700 uppercase tracking-widest mb-2">
-                                    Características (separadas por vírgula)
-                                </label>
-                                <input
-                                    className="w-full p-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-blue-500 focus:bg-white outline-none transition"
-                                    placeholder="Ex: Piscina, Segurança 24h, AC, Garagem"
-                                    value={formData.features}
-                                    onChange={e => updateField('features', e.target.value)}
-                                />
-                            </div>
+                            <div className="space-y-10">
+                                <div>
+                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-3">Comodidades (separadas por vírgula)</label>
+                                    <input
+                                        className="w-full p-6 bg-gray-50 rounded-3xl border-2 border-transparent font-bold outline-none focus:border-blue-600 focus:bg-white transition-all shadow-sm"
+                                        placeholder="Piscina, Gerador, Reservatório, Segurança 24h..."
+                                        value={formData.features}
+                                        onChange={e => updateField('features', e.target.value)}
+                                    />
+                                    <div className="flex flex-wrap gap-2 mt-4">
+                                        {formData.features.split(',').filter(f => f.trim()).map(f => (
+                                            <span key={f} className="bg-blue-50 text-blue-600 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest">{f.trim()}</span>
+                                        ))}
+                                    </div>
+                                </div>
 
-                            {/* Preview */}
-                            <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
-                                <h3 className="font-bold text-gray-900 mb-4">Resumo do Anúncio</h3>
-                                <div className="space-y-2 text-sm">
-                                    <p><span className="text-gray-500">Título:</span> <span className="font-medium">{formData.title}</span></p>
-                                    <p><span className="text-gray-500">Categoria:</span> <span className="font-medium">{CATEGORY_LABELS[formData.category] || formData.category}</span></p>
-                                    <p><span className="text-gray-500">Tipo:</span> <span className="font-medium">{formData.transactionType === TransactionType.RENT ? 'Arrendamento' : 'Venda'}</span></p>
-                                    <p><span className="text-gray-500">Preço:</span> <span className="font-bold text-blue-700">{Number(formData.price).toLocaleString()} AOA</span></p>
-                                    <p><span className="text-gray-500">Local:</span> <span className="font-medium">{formData.neighborhood}, {formData.city}</span></p>
+                                <div className="bg-gradient-to-br from-slate-900 to-slate-800 p-10 rounded-xl text-white shadow-2xl relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 p-8 opacity-10">
+                                        <Check className="w-32 h-32" />
+                                    </div>
+                                    <h3 className="text-2xl font-black mb-6 flex items-center gap-3">
+                                        <Box className="w-6 h-6 text-facil-blue" /> Resumo do Anúncio
+                                    </h3>
+                                    <div className="grid grid-cols-2 gap-8 text-sm font-medium">
+                                        <div className="space-y-4">
+                                            <p className="opacity-50 uppercase tracking-widest text-[10px] font-black">Identificação</p>
+                                            <p className="text-lg">{formData.title}</p>
+                                            <p className="inline-block bg-white/10 px-3 py-1 rounded-lg text-xs font-black uppercase tracking-widest">
+                                                {CATEGORY_LABELS[formData.category] || formData.category}
+                                            </p>
+                                        </div>
+                                        <div className="space-y-4">
+                                            <p className="opacity-50 uppercase tracking-widest text-[10px] font-black">Preço & Tipo</p>
+                                            <p className="text-3xl font-black text-facil-blue">{Number(formData.price).toLocaleString()} AOA</p>
+                                            <p className="text-xs">{formData.transactionType === TransactionType.RENT ? 'Arrendamento Mensal' : 'Venda Directa'}</p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     )}
 
                     {/* Navigation Buttons */}
-                    <div className="flex justify-between mt-10 pt-6 border-t">
+                    <div className="flex justify-between items-center mt-12 bg-slate-50 -mx-16 -mb-16 p-12 md:px-16 rounded-b-xl border-t border-slate-100">
                         {currentStep > 1 ? (
                             <button
                                 type="button"
-                                onClick={() => setCurrentStep(prev => prev - 1)}
-                                className="px-6 py-3 text-gray-600 font-medium hover:text-gray-900"
+                                onClick={handleBack}
+                                className="px-8 py-4 text-slate-500 font-black uppercase tracking-widest text-[10px] hover:text-slate-900 transition-all"
                             >
-                                ← Anterior
+                                ← Voltar
                             </button>
                         ) : <div />}
 
@@ -298,17 +236,17 @@ const CreateListingPage: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={handleNext}
-                                className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 transition"
+                                className="bg-slate-900 text-white px-12 py-5 rounded-xl font-black shadow-2xl hover:bg-slate-800 transition-all hover:scale-[1.02] active:scale-95 flex items-center gap-3"
                             >
-                                Continuar →
+                                Continuar Explorando <ArrowLeft className="w-5 h-5 rotate-180" />
                             </button>
                         ) : (
                             <button
                                 type="submit"
                                 disabled={isSubmitting}
-                                className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-8 py-4 rounded-xl font-bold hover:from-blue-700 hover:to-blue-800 transition shadow-lg disabled:opacity-50"
+                                className="bg-facil-blue text-white px-12 py-6 rounded-xl shadow-2xl shadow-facil-blue/20 hover:bg-blue-700 transition-all hover:scale-[1.02] active:scale-95 flex items-center gap-3 disabled:opacity-50 disabled:scale-100"
                             >
-                                {isSubmitting ? 'A publicar...' : '🚀 Publicar Anúncio'}
+                                {isSubmitting ? 'AGUARDE...' : 'LANÇAR ANÚNCIO AGORA'}
                             </button>
                         )}
                     </div>

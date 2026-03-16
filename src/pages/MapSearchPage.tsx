@@ -1,143 +1,162 @@
 
-import React, { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import { useApp } from '../contexts/AppContext';
+import React from 'react';
+import { useMapSearch } from '../features/search/hooks/useMapSearch';
 import { SearchBar } from '../components';
-import { Listing } from '../types';
+import { ArrowLeft, MapPin, Globe, Shield, Navigation, Settings2 } from 'lucide-react';
 
 const MapSearchPage: React.FC = () => {
-    const navigate = useNavigate();
-    const { state } = useApp();
-    const mapRef = useRef<HTMLDivElement>(null);
-    const mapInstance = useRef<L.Map | null>(null);
-    const markersLayer = useRef<L.LayerGroup | null>(null);
-
-    const [radius, setRadius] = useState(5); // KM
-    const [center, setCenter] = useState<[number, number]>([-8.8368, 13.2344]); // Luanda
-    const [visibleListings, setVisibleListings] = useState<Listing[]>([]);
-
-    useEffect(() => {
-        if (mapRef.current && !mapInstance.current) {
-            mapInstance.current = L.map(mapRef.current).setView(center, 13);
-
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; OpenStreetMap contributors'
-            }).addTo(mapInstance.current);
-
-            markersLayer.current = L.layerGroup().addTo(mapInstance.current);
-
-            // Fix for default marker icons in Leaflet + Vite
-            delete (L.Icon.Default.prototype as any)._getIconUrl;
-            L.Icon.Default.mergeOptions({
-                iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-                iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-            });
-        }
-    }, []);
-
-    useEffect(() => {
-        if (markersLayer.current && mapInstance.current) {
-            markersLayer.current.clearLayers();
-
-            state.listings.forEach(listing => {
-                const marker = L.marker(listing.location.coords)
-                    .bindPopup(`
-                        <div class="p-2">
-                            <img src="${listing.images[0]}" class="w-full h-24 object-cover rounded-lg mb-2" />
-                            <h4 class="font-bold">${listing.title}</h4>
-                            <p class="text-blue-600 font-black">${listing.price.toLocaleString()} Kz</p>
-                            <button onclick="window.location.href='/listing/${listing.id}'" class="w-full mt-2 py-1 bg-blue-600 text-white rounded font-bold text-xs">Ver Detalhes</button>
-                        </div>
-                    `)
-                    .addTo(markersLayer.current!);
-            });
-
-            // Add radius circle
-            const circle = L.circle(center, {
-                radius: radius * 1000,
-                color: '#2563eb',
-                fillColor: '#3b82f6',
-                fillOpacity: 0.1
-            }).addTo(markersLayer.current);
-
-            mapInstance.current.fitBounds(circle.getBounds());
-
-            // Filter listings by radius (simplified haversine or just leaflet distance)
-            const filtered = state.listings.filter(l => {
-                const dist = mapInstance.current!.distance(center, l.location.coords);
-                return dist <= radius * 1000;
-            });
-            setVisibleListings(filtered);
-        }
-    }, [state.listings, radius, center]);
+    const {
+        navigate,
+        mapRef,
+        radius, setRadius,
+        visibleListings
+    } = useMapSearch();
 
     return (
-        <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden">
-            {/* Map Header / Filters */}
-            <div className="bg-white p-6 shadow-md z-20 flex flex-col md:flex-row gap-6 items-center">
+        <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden bg-white">
+            {/* Control Bar */}
+            <div className="bg-white/95 backdrop-blur-xl p-8 border-b border-gray-100 z-30 flex flex-col md:flex-row gap-8 items-center shadow-xl shadow-gray-100/50">
                 <button
                     onClick={() => navigate(-1)}
-                    className="p-3 bg-gray-100 rounded-2xl hover:bg-gray-200 transition"
+                    className="p-5 bg-gray-50 text-gray-400 rounded-3xl hover:bg-white hover:text-blue-600 hover:shadow-2xl transition-all active:scale-95 group"
                 >
-                    ←
+                    <ArrowLeft className="w-6 h-6 group-hover:-translate-x-1 transition-transform" />
                 </button>
-                <div className="flex-grow max-w-2xl">
-                    <SearchBar onSearch={() => { }} showFilters={false} placeholder="Pesquisar localização no mapa..." />
+                <div className="flex-grow max-w-2xl relative group">
+                    <div className="absolute -inset-2 bg-blue-600/5 rounded-[2.5rem] opacity-0 group-focus-within:opacity-100 transition duration-500"></div>
+                    <div className="relative z-10 w-full">
+                        <SearchBar onSearch={() => { }} placeholder="Pesquisar localização no mapa de Angola..." />
+                    </div>
                 </div>
-                <div className="flex items-center gap-4 bg-blue-50 p-3 rounded-2xl border border-blue-100 min-w-[250px]">
-                    <span className="text-xs font-black text-blue-900 uppercase">Raio:</span>
-                    <input
-                        type="range"
-                        min="1"
-                        max="50"
-                        value={radius}
-                        onChange={(e) => setRadius(parseInt(e.target.value))}
-                        className="flex-grow accent-blue-600"
-                    />
-                    <span className="font-black text-blue-700 min-w-[50px]">{radius} KM</span>
+                <div className="flex items-center gap-6 bg-blue-50/50 p-6 rounded-[2.5rem] border border-blue-100/50 min-w-[320px] shadow-sm">
+                    <div className="p-3 bg-blue-600 text-white rounded-2xl shadow-xl shadow-blue-200">
+                        <Settings2 className="w-4 h-4" />
+                    </div>
+                    <div className="flex-grow space-y-2">
+                        <div className="flex justify-between items-center">
+                            <span className="text-[10px] font-black text-blue-900 uppercase tracking-widest">Raio de Pesquisa</span>
+                            <span className="font-black text-blue-700 text-sm">{radius} KM</span>
+                        </div>
+                        <input
+                            type="range"
+                            min="1"
+                            max="50"
+                            value={radius}
+                            onChange={(e) => setRadius(parseInt(e.target.value))}
+                            className="w-full h-1.5 bg-blue-100 rounded-full appearance-none cursor-pointer accent-blue-600"
+                        />
+                    </div>
                 </div>
             </div>
 
-            <div className="flex flex-grow overflow-hidden">
+            <div className="flex flex-grow overflow-hidden relative">
                 {/* Result Sidebar */}
-                <div className="hidden lg:flex flex-col w-96 bg-white border-r overflow-y-auto">
-                    <div className="p-6 border-b">
-                        <h2 className="font-black text-xl text-gray-900 uppercase tracking-tight">
-                            Resultados no Raio
-                        </h2>
-                        <p className="text-sm text-gray-500 font-medium">{visibleListings.length} anúncios encontrados</p>
+                <div className="hidden lg:flex flex-col w-[26rem] bg-white border-r border-gray-100 overflow-y-auto z-20 shadow-2xl relative">
+                    <div className="p-8 border-b border-gray-50 flex justify-between items-center">
+                        <div>
+                            <h2 className="font-black text-2xl text-gray-900 tracking-tight leading-none">
+                                Proximo de Si
+                            </h2>
+                            <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest mt-2">{visibleListings.length} UNIDADES ENCONTRADAS</p>
+                        </div>
+                        <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl">
+                            <Navigation className="w-5 h-5" />
+                        </div>
                     </div>
-                    <div className="p-4 space-y-4">
-                        {visibleListings.map(listing => (
-                            <div
-                                key={listing.id}
-                                onClick={() => navigate(`/listing/${listing.id}`)}
-                                className="flex gap-4 p-3 hover:bg-blue-50 rounded-3xl transition cursor-pointer group border border-transparent hover:border-blue-100"
-                            >
-                                <img src={listing.images[0]} className="w-24 h-24 rounded-2xl object-cover shadow-sm" alt="" />
-                                <div className="flex flex-col justify-center">
-                                    <h4 className="font-bold text-gray-900 line-clamp-1 group-hover:text-blue-600 transition">{listing.title}</h4>
-                                    <p className="text-sm text-gray-500 font-medium">{listing.location.neighborhood}</p>
-                                    <p className="text-lg font-black text-blue-700 mt-1">{listing.price.toLocaleString()} Kz</p>
+
+                    <div className="p-6 space-y-6">
+                        {visibleListings.length === 0 ? (
+                            <div className="text-center py-24 px-8 bg-gray-50/50 rounded-[3rem] border-2 border-dashed border-gray-100">
+                                <div className="h-20 w-20 bg-white rounded-full flex items-center justify-center shadow-xl mx-auto mb-6 text-4xl">📍</div>
+                                <h3 className="font-black text-gray-900 mb-2">Sem Imóveis Próximos</h3>
+                                <p className="text-gray-500 text-sm font-bold uppercase tracking-widest">Tente aumentar o raio para 20KM+</p>
+                            </div>
+                        ) : (
+                            visibleListings.map(listing => (
+                                <div
+                                    key={listing.id}
+                                    onClick={() => navigate(`/listing/${listing.id}`)}
+                                    className="p-4 bg-white rounded-[2.5rem] transition-all cursor-pointer group border-2 border-transparent hover:border-blue-100 hover:shadow-2xl hover:shadow-blue-50 relative overflow-hidden flex gap-5 items-center active:scale-[0.98]"
+                                >
+                                    <div className="h-32 w-32 rounded-[2rem] overflow-hidden shadow-lg flex-shrink-0 relative">
+                                        <img src={listing.images[0]} className="w-full h-full object-cover group-hover:scale-110 transition duration-700" alt="" />
+                                        <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-[8px] font-black text-blue-600 uppercase tracking-widest shadow-lg">
+                                            {listing.category === 'HOUSE' ? 'VIVENDA' : 'APTO'}
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col justify-center gap-1">
+                                        <h4 className="font-black text-gray-900 text-lg line-clamp-1 group-hover:text-blue-600 transition leading-tight">{listing.title}</h4>
+                                        <div className="flex items-center text-gray-400 font-bold text-[10px] uppercase tracking-widest">
+                                            <MapPin className="w-3 h-3 mr-1 text-blue-400" />
+                                            {listing.location.neighborhood}
+                                        </div>
+                                        <p className="text-2xl font-black text-blue-700 mt-2 tracking-tight">{listing.price.toLocaleString()} <span className="text-xs font-black uppercase text-gray-300 ml-1">Kz</span></p>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
-                        {visibleListings.length === 0 && (
-                            <div className="text-center py-20 text-gray-400">
-                                <span className="text-4xl block mb-2">📍</span>
-                                <p className="font-bold">Nenhum imóvel neste raio.</p>
-                                <p className="text-xs">Tente aumentar o raio de pesquisa.</p>
-                            </div>
+                            ))
                         )}
                     </div>
+
+                    <div className="mt-auto p-8 border-t border-gray-50 bg-gray-50/30">
+                        <div className="flex items-center gap-4 text-gray-500">
+                            <div className="p-3 bg-white rounded-2xl shadow-sm text-emerald-500">
+                                <Shield className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-black text-gray-900 uppercase tracking-[0.2em]">Mapa Auditado FACIL</p>
+                                <p className="text-[8px] font-bold text-gray-400 uppercase">Geolocalização verificada por IA</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                {/* Map Container */}
+                {/* Map */}
                 <div ref={mapRef} className="flex-grow z-10" />
+
+                {/* Map Floating Controls */}
+                <div className="absolute top-8 right-8 z-20 flex flex-col gap-3">
+                    <button className="p-4 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/50 text-gray-400 hover:text-blue-600 transition group">
+                        <Globe className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+                    </button>
+                    <button className="p-4 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/50 text-gray-400 hover:text-blue-600 transition group">
+                        <MapPin className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                    </button>
+                    <div className="mt-4 bg-white/95 backdrop-blur-xl p-3 rounded-2xl shadow-2xl border border-white/50 space-y-3">
+                        <div className="h-10 w-10 flex items-center justify-center font-black text-blue-600 bg-blue-50 rounded-xl cursor-help">i</div>
+                    </div>
+                </div>
             </div>
+
+            <style>{`
+                .premium-popup .leaflet-popup-content-wrapper {
+                    padding: 12px;
+                    border-radius: 2rem;
+                    border: 4px solid white;
+                    box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+                }
+                .premium-popup .leaflet-popup-tip {
+                    background: white;
+                }
+                .leaflet-bar {
+                    border: none !important;
+                    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+                }
+                .leaflet-bar a {
+                    background-color: white !important;
+                    color: #4b5563 !important;
+                    border: 1px solid #f3f4f6 !important;
+                    width: 44px !important;
+                    height: 44px !important;
+                    line-height: 44px !important;
+                    border-radius: 12px !important;
+                    margin-bottom: 8px !important;
+                    font-weight: 900 !important;
+                }
+                .leaflet-bar a:hover {
+                    color: #2563eb !important;
+                    background-color: #f9fafb !important;
+                }
+            `}</style>
         </div>
     );
 };

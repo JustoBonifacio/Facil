@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { supabase } from '../../lib/supabase';
-import { UserRole, ListingCategory, TransactionType } from '../../types';
+import { supabase } from '../../core/services/supabase';
+import { UserRole, ListingCategory, TransactionType } from '../../shared/types';
 
 export const DatabaseSeeder: React.FC = () => {
     const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');

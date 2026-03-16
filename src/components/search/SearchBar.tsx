@@ -1,210 +1,151 @@
 
 import React, { useState } from 'react';
-import { ListingCategory, TransactionType, SearchFilters } from '../../types';
-import {
-    Search, Settings, Home, Globe, ShoppingBag,
-    Car, Sofa, Armchair, ChevronDown, Check
-} from 'lucide-react';
+import { ListingCategory, TransactionType, SearchFilters } from '../../shared/types';
+import { Search, ChevronDown, MapPin, Home, DollarSign, Ruler } from 'lucide-react';
 
 interface SearchBarProps {
     onSearch: (filters: SearchFilters) => void;
     placeholder?: string;
-    showFilters?: boolean;
 }
 
-export const SearchBar: React.FC<SearchBarProps> = ({
-    onSearch,
-    placeholder = 'O que procura? (ex: Apartamento T2, Toyota Hilux...)',
-    showFilters = true
-}) => {
-    const [query, setQuery] = useState('');
-    const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+export const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
+    const [activeTab, setActiveTab] = useState<'all' | TransactionType>('all');
     const [filters, setFilters] = useState<SearchFilters>({});
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSearch({ ...filters, query });
+        onSearch({
+            ...filters,
+            transactionType: activeTab === 'all' ? undefined : activeTab
+        });
     };
-
-    const handleQuickCategory = (category: ListingCategory) => {
-        const newFilters = { ...filters, category: filters.category === category ? undefined : category };
-        setFilters(newFilters);
-        onSearch({ ...newFilters, query });
-    };
-
-    const categories = [
-        { value: ListingCategory.HOUSE, label: 'Casas', icon: <Home className="w-6 h-6" /> },
-        { value: ListingCategory.LAND, label: 'Terrenos', icon: <Globe className="w-6 h-6" /> },
-        { value: ListingCategory.SHOP, label: 'Comercial', icon: <ShoppingBag className="w-6 h-6" /> },
-        { value: ListingCategory.CAR, label: 'Carros', icon: <Car className="w-6 h-6" /> },
-    ];
-
-    const cities = ['Luanda', 'Benguela', 'Huambo', 'Lubango', 'Cabinda', 'Namibe', 'Soyo'];
-    const typologies = ['T0', 'T1', 'T2', 'T3', 'T4', 'T5+'];
 
     return (
-        <div className="w-full">
-            {/* Quick Category Icons */}
-            <div className="flex justify-center gap-4 mb-6">
-                {categories.map(cat => (
-                    <button
-                        key={cat.value}
-                        type="button"
-                        onClick={() => handleQuickCategory(cat.value)}
-                        className={`flex flex-col items-center gap-3 p-5 rounded-[2rem] transition-all duration-300 min-w-[110px] border-2 ${filters.category === cat.value
-                            ? 'bg-blue-600 border-blue-600 text-white shadow-xl shadow-blue-200 scale-105'
-                            : 'bg-white border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-100'
-                            }`}
+        <div className="w-full max-w-5xl mx-auto px-4">
+            {/* Tabs */}
+            <div className="flex justify-center mb-0">
+                <div className="bg-white/95 backdrop-blur-md rounded-t-xl overflow-hidden flex shadow-lg border border-b-0 border-slate-200/50">
+                    <TabButton
+                        active={activeTab === 'all'}
+                        onClick={() => setActiveTab('all')}
                     >
-                        {cat.icon}
-                        <span className={`text-xs font-black uppercase tracking-widest ${filters.category === cat.value ? 'opacity-100' : 'opacity-60'}`}>
-                            {cat.label}
-                        </span>
-                    </button>
-                ))}
+                        Todos
+                    </TabButton>
+                    <TabButton
+                        active={activeTab === TransactionType.RENT}
+                        onClick={() => setActiveTab(TransactionType.RENT)}
+                    >
+                        Para Alugar
+                    </TabButton>
+                    <TabButton
+                        active={activeTab === TransactionType.BUY}
+                        onClick={() => setActiveTab(TransactionType.BUY)}
+                    >
+                        Para Comprar
+                    </TabButton>
+                </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="bg-white p-3 rounded-[2rem] shadow-2xl border border-gray-100 relative z-10">
-                <div className="flex flex-col md:flex-row gap-2">
-                    {/* Search Input */}
-                    <div className="flex-grow flex items-center px-4 border-b md:border-b-0 md:border-r border-gray-100">
-                        <Search className="w-5 h-5 text-gray-400 mr-3" />
-                        <input
-                            type="text"
-                            placeholder={placeholder}
-                            className="w-full py-4 outline-none text-gray-700 font-medium placeholder:text-gray-300"
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                        />
-                    </div>
-
-                    {/* Filter Toggle */}
-                    {showFilters && (
-                        <button
-                            type="button"
-                            onClick={() => setIsFiltersOpen(!isFiltersOpen)}
-                            className={`px-6 py-4 text-sm font-black rounded-2xl transition-all flex items-center ${isFiltersOpen ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-50'
-                                }`}
-                        >
-                            <Settings className="w-5 h-5 mr-2.5" />
-                            FILTROS
-                        </button>
-                    )}
-
-                    {/* Submit Button */}
-                    <button
-                        type="submit"
-                        className="bg-blue-600 text-white px-10 py-4 rounded-2xl font-black hover:bg-blue-700 transition duration-300 shadow-xl shadow-blue-200 active:scale-95"
+            {/* Main Bar */}
+            <form
+                onSubmit={handleSubmit}
+                className="bg-white p-6 rounded-xl lg:rounded-2xl shadow-2xl flex flex-col lg:flex-row items-center gap-4 border border-slate-100"
+            >
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 flex-grow w-full">
+                    <SearchField
+                        label="O que procura?"
+                        icon={<Home className="w-4 h-4" />}
                     >
-                        PESQUISAR
-                    </button>
+                        <select
+                            className="w-full bg-transparent outline-none text-sm font-semibold text-slate-700 appearance-none cursor-pointer"
+                            value={filters.category || ''}
+                            onChange={(e) => setFilters({ ...filters, category: e.target.value as any || undefined })}
+                        >
+                            <option value="">Tipo de Imóvel</option>
+                            <option value={ListingCategory.HOUSE}>Vivenda</option>
+                            <option value={ListingCategory.APARTMENT}>Apartamento</option>
+                            <option value={ListingCategory.LAND}>Terreno</option>
+                        </select>
+                    </SearchField>
+
+                    <SearchField
+                        label="Localização"
+                        icon={<MapPin className="w-4 h-4" />}
+                    >
+                        <select
+                            className="w-full bg-transparent outline-none text-sm font-semibold text-slate-700 appearance-none cursor-pointer"
+                            value={filters.city || ''}
+                            onChange={(e) => setFilters({ ...filters, city: e.target.value || undefined })}
+                        >
+                            <option value="">Todas as Cidades</option>
+                            <option value="Luanda">Luanda</option>
+                            <option value="Benguela">Benguela</option>
+                            <option value="Lubango">Lubango</option>
+                        </select>
+                    </SearchField>
+
+                    <SearchField
+                        label="Área Mínima"
+                        icon={<Ruler className="w-4 h-4" />}
+                    >
+                        <select
+                            className="w-full bg-transparent outline-none text-sm font-semibold text-slate-700 appearance-none cursor-pointer"
+                        >
+                            <option value="">Quartos</option>
+                            <option value="1">1 Quarto</option>
+                            <option value="2">2 Quartos</option>
+                            <option value="3">3+ Quartos</option>
+                        </select>
+                    </SearchField>
+
+                    <SearchField
+                        label="Seu Orçamento"
+                        icon={<DollarSign className="w-4 h-4" />}
+                    >
+                        <input
+                            type="number"
+                            placeholder="Preço Máximo"
+                            className="w-full bg-transparent outline-none text-sm font-semibold text-slate-700 placeholder:text-slate-300"
+                            value={filters.maxPrice || ''}
+                            onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value ? Number(e.target.value) : undefined })}
+                        />
+                    </SearchField>
                 </div>
 
-                {/* Expanded Filters */}
-                {showFilters && isFiltersOpen && (
-                    <div className="mt-6 pt-6 border-t border-gray-100 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 animate-fade-in">
-                        {/* Typology */}
-                        <div>
-                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">
-                                Tipologia
-                            </label>
-                            <div className="flex flex-wrap gap-1">
-                                {typologies.map(t => (
-                                    <button
-                                        key={t}
-                                        type="button"
-                                        onClick={() => setFilters({ ...filters, typology: filters.typology === t ? undefined : t })}
-                                        className={`px-3 py-2 rounded-lg text-xs font-bold border transition ${filters.typology === t ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-100 text-gray-500 hover:border-blue-200'
-                                            }`}
-                                    >
-                                        {t}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Location/City */}
-                        <div>
-                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">
-                                Localização
-                            </label>
-                            <select
-                                className="w-full p-3 bg-gray-50 rounded-xl border-0 outline-none font-bold text-gray-700 focus:ring-2 focus:ring-blue-500/20"
-                                value={filters.city || ''}
-                                onChange={(e) => setFilters({ ...filters, city: e.target.value || undefined })}
-                            >
-                                <option value="">Qualquer Cidade</option>
-                                {cities.map(city => (
-                                    <option key={city} value={city}>{city}</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        {/* Condition */}
-                        <div>
-                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">
-                                Estado do Imóvel
-                            </label>
-                            <div className="grid grid-cols-3 gap-1">
-                                {(['NEW', 'USED', 'RENOVATED'] as const).map(c => (
-                                    <button
-                                        key={c}
-                                        type="button"
-                                        onClick={() => setFilters({ ...filters, condition: filters.condition === c ? undefined : c })}
-                                        className={`py-2 rounded-lg text-[10px] font-black transition ${filters.condition === c ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-400 hover:bg-gray-100'
-                                            }`}
-                                    >
-                                        {c === 'NEW' ? 'NOVO' : c === 'USED' ? 'USADO' : 'OBRAS'}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Furniture */}
-                        <div>
-                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">
-                                Mobiliário
-                            </label>
-                            <div className="flex gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setFilters({ ...filters, isFurnished: filters.isFurnished === true ? undefined : true })}
-                                    className={`flex-1 py-3.5 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-2 border-2 ${filters.isFurnished === true ? 'bg-blue-600 border-blue-600 text-white shadow-lg' : 'bg-gray-50 border-transparent text-gray-400 hover:bg-gray-100'
-                                        }`}
-                                >
-                                    <Sofa className="w-4 h-4" /> Mobilado
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setFilters({ ...filters, isFurnished: filters.isFurnished === false ? undefined : false })}
-                                    className={`flex-1 py-3.5 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-2 border-2 ${filters.isFurnished === false ? 'bg-blue-600 border-blue-600 text-white shadow-lg' : 'bg-gray-50 border-transparent text-gray-400 hover:bg-gray-100'
-                                        }`}
-                                >
-                                    <Armchair className="w-4 h-4" /> S/ Mobília
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Price Range */}
-                        <div>
-                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">
-                                Preço Máximo (AOA)
-                            </label>
-                            <div className="relative">
-                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">Kz</span>
-                                <input
-                                    type="number"
-                                    placeholder="Sem limite"
-                                    className="w-full p-3 pl-12 bg-gray-50 rounded-xl border-0 outline-none font-bold text-gray-700 focus:ring-2 focus:ring-blue-500/20"
-                                    value={filters.maxPrice || ''}
-                                    onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value ? Number(e.target.value) : undefined })}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                )}
+                <button
+                    type="submit"
+                    className="w-full lg:w-auto bg-facil-blue text-white px-10 py-4 rounded-xl font-bold uppercase tracking-wider hover:bg-blue-700 transition-all flex items-center justify-center gap-2 shadow-lg hover:-translate-y-1"
+                >
+                    <Search className="w-4 h-4" />
+                    Pesquisar
+                </button>
             </form>
         </div>
     );
 };
 
+const TabButton = ({ active, onClick, children }: { active: boolean, onClick: () => void, children: React.ReactNode }) => (
+    <button
+        type="button"
+        onClick={onClick}
+        className={`px-8 py-4 text-[13px] font-bold transition-all relative ${active ? 'bg-facil-blue text-white' : 'text-facil-dark hover:bg-slate-50'}`}
+    >
+        {children}
+        {active && <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20" />}
+    </button>
+);
+
+const SearchField = ({ label, icon, children }: { label: string, icon: React.ReactNode, children: React.ReactNode }) => (
+    <div className="flex flex-col border-b md:border-b-0 md:border-r border-slate-100 last:border-0 pr-4 group">
+        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 group-hover:text-facil-blue transition-colors">
+            {label}
+        </label>
+        <div className="flex items-center gap-2 relative">
+            <div className="text-slate-300 group-hover:text-facil-blue transition-colors animate-icon-bounce">
+                {icon}
+            </div>
+            {children}
+            <ChevronDown className="w-3 h-3 text-slate-300 absolute right-0 pointer-events-none" />
+        </div>
+    </div>
+);

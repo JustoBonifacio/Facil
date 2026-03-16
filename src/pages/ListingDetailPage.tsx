@@ -1,282 +1,263 @@
 
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useApp } from '../contexts/AppContext';
+import React from 'react';
+import { useListingDetail } from '../features/listings/hooks/useListingDetail';
 import { LoadingSpinner, ChatSystem, ContractFlow } from '../components';
-import { TransactionType, Listing, User } from '../types';
-import { formatPrice, formatDate } from '../utils/helpers';
+import { TransactionType } from '../shared/types';
+import { formatPrice, formatDate } from '../shared/utils/helpers';
 import {
     ArrowLeft, Heart, MapPin, Check,
     ShieldCheck, MessageSquare, FileText,
     AlertTriangle, ChevronLeft, ChevronRight,
-    Star
+    Star, Calendar, Ruler, BadgeCheck, Share2,
+    MoreHorizontal, Printer, Eye
 } from 'lucide-react';
 
 const ListingDetailPage: React.FC = () => {
-    const { id } = useParams<{ id: string }>();
-    const navigate = useNavigate();
-    const { state, actions } = useApp();
-
-    const [listing, setListing] = useState<Listing | null>(null);
-    const [owner, setOwner] = useState<User | null>(null);
-    const [activeImageIndex, setActiveImageIndex] = useState(0);
-    const [isChatOpen, setIsChatOpen] = useState(false);
-    const [isContractOpen, setIsContractOpen] = useState(false);
-    const [message, setMessage] = useState('');
-
-    useEffect(() => {
-        if (id) {
-            const foundListing = state.listings.find(l => l.id === id);
-            if (foundListing) {
-                setListing(foundListing);
-                const foundOwner = state.users.find(u => u.id === foundListing.ownerId);
-                setOwner(foundOwner || null);
-            }
-        }
-    }, [id, state.listings, state.users]);
-
-    const handleContact = () => {
-        if (!state.user) {
-            navigate('/auth', { state: { from: { pathname: `/listing/${id}` } } });
-            return;
-        }
-        setIsChatOpen(true);
-    };
-
-    const handleSendMessage = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!message.trim() || !listing || !owner) return;
-
-        actions.sendMessage(listing.id, owner.id, message);
-        setMessage('');
-    };
-
-    const handleAction = () => {
-        if (!state.user) {
-            navigate('/auth', { state: { from: { pathname: `/listing/${id}` } } });
-            return;
-        }
-        // Open contract flow - to be implemented
-        // Open contract flow
-        setIsContractOpen(true);
-    };
+    const {
+        listing, owner, activeImageIndex, setActiveImageIndex,
+        isChatOpen, setIsChatOpen, isContractOpen, setIsContractOpen,
+        handleContact, handleAction,
+        chatMessages, state, actions, navigate
+    } = useListingDetail();
 
     if (!listing || !owner) {
         return (
             <div className="min-h-[50vh] flex items-center justify-center">
-                <LoadingSpinner size="lg" text="A carregar anúncio..." />
+                <LoadingSpinner size="lg" text="A carregar anúncio de luxo..." />
             </div>
         );
     }
 
-    const chatMessages = state.messages.filter(m =>
-        m.listingId === listing.id &&
-        state.user &&
-        ((m.senderId === state.user.id && m.receiverId === owner.id) ||
-            (m.senderId === owner.id && m.receiverId === state.user.id))
-    );
+    const isFavorite = state.user?.favorites?.includes(listing.id);
 
     return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            {/* Back Button */}
-            <button
-                onClick={() => navigate(-1)}
-                className="flex items-center text-gray-500 hover:text-blue-600 mb-6 font-black uppercase tracking-widest text-[10px] transition-all group"
-            >
-                <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" /> Voltar
-            </button>
+        <div className="bg-gray-50 min-h-screen">
+            {/* Top Navigation Row */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex justify-between items-center">
+                <button
+                    onClick={() => navigate(-1)}
+                    className="group flex items-center text-gray-500 hover:text-blue-600 font-black uppercase tracking-widest text-[10px] transition-all"
+                >
+                    <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" /> Voltar à Pesquisa
+                </button>
+                <div className="flex gap-4">
+                    <button className="p-3 bg-white rounded-xl shadow-sm hover:shadow-md transition text-gray-400 hover:text-blue-600">
+                        <Share2 className="w-5 h-5" />
+                    </button>
+                    <button className="p-3 bg-white rounded-xl shadow-sm hover:shadow-md transition text-gray-400 hover:text-blue-600">
+                        <Printer className="w-5 h-5" />
+                    </button>
+                    <button className="p-3 bg-white rounded-xl shadow-sm hover:shadow-md transition text-gray-400 hover:text-blue-600">
+                        <MoreHorizontal className="w-5 h-5" />
+                    </button>
+                </div>
+            </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Left Column: Images and Info */}
-                <div className="lg:col-span-2 space-y-8">
-                    {/* Main Image */}
-                    <div className="rounded-3xl overflow-hidden shadow-2xl bg-black aspect-video relative group">
+            {/* Premium Gallery Structure */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-12">
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 h-[600px]">
+                    <div className="lg:col-span-3 h-full relative group overflow-hidden rounded-xl shadow-2xl">
                         <img
                             src={listing.images[activeImageIndex]}
                             alt={listing.title}
-                            className="w-full h-full object-contain transition-transform duration-500"
+                            className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
                         />
-
-                        {/* Favorite Button */}
                         <button
                             onClick={() => actions.toggleFavorite(listing.id)}
-                            className={`absolute top-6 right-6 p-4 rounded-2xl shadow-2xl backdrop-blur-md transition-all z-20 hover:scale-110 active:scale-90 ${state.user?.favorites?.includes(listing.id)
-                                ? 'bg-red-500 text-white'
-                                : 'bg-white/50 text-white hover:bg-white hover:text-red-500'
+                            className={`absolute top-8 right-8 p-5 rounded-xl shadow-2xl backdrop-blur-md transition-all z-20 hover:scale-110 active:scale-90 ${isFavorite
+                                ? 'bg-rose-500 text-white'
+                                : 'bg-white/20 text-white hover:bg-white hover:text-rose-500 border border-white/30'
                                 }`}
                         >
-                            <Heart className={`w-6 h-6 ${state.user?.favorites?.includes(listing.id) ? 'fill-current' : ''}`} />
+                            <Heart className={`w-8 h-8 ${isFavorite ? 'fill-current' : ''}`} />
                         </button>
 
-                        {/* Image Navigation */}
-                        {listing.images.length > 1 && (
-                            <>
-                                <button
-                                    onClick={() => setActiveImageIndex(prev => prev > 0 ? prev - 1 : listing.images.length - 1)}
-                                    className="absolute left-4 top-1/2 -translate-y-1/2 p-4 bg-white/90 backdrop-blur-sm rounded-2xl opacity-0 group-hover:opacity-100 transition shadow-2xl hover:bg-white text-gray-900"
-                                >
-                                    <ChevronLeft className="w-6 h-6" />
-                                </button>
-                                <button
-                                    onClick={() => setActiveImageIndex(prev => prev < listing.images.length - 1 ? prev + 1 : 0)}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 p-4 bg-white/90 backdrop-blur-sm rounded-2xl opacity-0 group-hover:opacity-100 transition shadow-2xl hover:bg-white text-gray-900"
-                                >
-                                    <ChevronRight className="w-6 h-6" />
-                                </button>
-                                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
-                                    {listing.images.map((_, i) => (
-                                        <button
-                                            key={i}
-                                            onClick={() => setActiveImageIndex(i)}
-                                            className={`h-2 w-2 rounded-full transition ${i === activeImageIndex ? 'bg-white w-6' : 'bg-white/40 hover:bg-white/60'}`}
-                                        />
-                                    ))}
+                        <div className="absolute bottom-8 left-8 flex gap-2">
+                            <div className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl">
+                                {listing.transactionType === TransactionType.RENT ? 'Arrendamento' : 'Venda'}
+                            </div>
+                            {listing.status === 'AVAILABLE' && (
+                                <div className="bg-emerald-500 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl">
+                                    Disponível Agora
                                 </div>
-                            </>
-                        )}
+                            )}
+                        </div>
                     </div>
 
-                    {/* Thumbnails */}
-                    {listing.images.length > 1 && (
-                        <div className="flex gap-4 overflow-x-auto pb-2">
-                            {listing.images.map((img, i) => (
-                                <button
-                                    key={i}
-                                    onClick={() => setActiveImageIndex(i)}
-                                    className={`flex-shrink-0 w-24 h-16 rounded-xl overflow-hidden border-2 transition ${i === activeImageIndex ? 'border-blue-600' : 'border-transparent opacity-60 hover:opacity-100'
-                                        }`}
-                                >
-                                    <img src={img} alt="" className="w-full h-full object-cover" />
-                                </button>
-                            ))}
-                        </div>
-                    )}
+                    <div className="hidden lg:grid grid-rows-3 gap-4 h-full">
+                        {listing.images.slice(1, 4).map((img, i) => (
+                            <div
+                                key={i}
+                                onClick={() => setActiveImageIndex(state.listings.find(l => l.id === listing.id)?.images.indexOf(img) || 0)}
+                                className="h-full w-full overflow-hidden rounded-xl cursor-pointer group shadow-lg"
+                            >
+                                <img src={img} className="w-full h-full object-cover group-hover:scale-110 transition duration-500" />
+                            </div>
+                        ))}
+                        {listing.images.length > 4 && (
+                            <button className="absolute bottom-0 right-0 m-4 bg-white/90 backdrop-blur-md px-4 py-2 rounded-xl text-xs font-black shadow-xl">
+                                +{listing.images.length - 4} Fotos
+                            </button>
+                        )}
+                    </div>
+                </div>
+            </div>
 
-                    {/* Details Card */}
-                    <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
-                        <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-6">
-                            <div>
-                                <h1 className="text-4xl font-black text-gray-900 mb-2 tracking-tight">{listing.title}</h1>
-                                <div className="flex items-center text-gray-500 font-medium">
-                                    <MapPin className="w-4 h-4 text-blue-500 mr-2" />
+            {/* Content Section */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-32">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+                    {/* Primary Information */}
+                    <div className="lg:col-span-2 space-y-12">
+                        <section className="bg-white p-12 rounded-xl shadow-sm border border-slate-100 relative overflow-hidden">
+                            <div className="relative z-10">
+                                <span className="text-facil-blue font-black text-xs uppercase tracking-[0.3em] mb-4 block">Imobiliária Premium - Angola</span>
+                                <h1 className="text-5xl font-black text-slate-900 mb-4 tracking-tight leading-[1.1]">{listing.title}</h1>
+                                <div className="flex items-center text-slate-500 font-bold text-lg mb-8">
+                                    <MapPin className="w-6 h-6 text-facil-blue mr-2" />
                                     {listing.location.neighborhood}, {listing.location.city}
                                 </div>
-                            </div>
-                            <div className="text-right">
-                                <p className="text-3xl font-black text-blue-700">
-                                    {formatPrice(listing.price, listing.currency)}
-                                </p>
-                                <p className="text-sm text-gray-500 font-medium">
-                                    {listing.transactionType === TransactionType.RENT ? 'Por mês' : 'Preço total'}
-                                </p>
-                            </div>
-                        </div>
 
-                        {/* Stats */}
-                        <div className="flex gap-6 py-6 border-y border-gray-100 mb-6">
-                            <div>
-                                <span className="text-2xl font-bold text-gray-900">{listing.views}</span>
-                                <p className="text-xs text-gray-500 uppercase tracking-wider">Visualizações</p>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-8 py-10 border-y border-slate-100">
+                                    <div className="space-y-1">
+                                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Valor do Imóvel</p>
+                                        <p className="text-3xl font-black text-facil-blue">{formatPrice(listing.price, listing.currency)}</p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Área Total</p>
+                                        <div className="flex items-center gap-2">
+                                            <div className="animate-icon-pulse">
+                                                <Ruler className="w-5 h-5 text-slate-400" />
+                                            </div>
+                                            <p className="text-xl font-black text-slate-900">{listing.area || 'N/A'} m²</p>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Publicado a</p>
+                                        <div className="flex items-center gap-2">
+                                            <Calendar className="w-5 h-5 text-slate-400" />
+                                            <p className="text-xl font-black text-slate-900">{formatDate(listing.createdAt, 'relative')}</p>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Visitas</p>
+                                        <div className="flex items-center gap-2">
+                                            <div className="animate-icon-pulse">
+                                                <Eye className="w-5 h-5 text-slate-400" />
+                                            </div>
+                                            <p className="text-xl font-black text-slate-900">{listing.views * 32}</p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div>
-                                <span className="text-2xl font-bold text-gray-900">{formatDate(listing.createdAt, 'relative')}</span>
-                                <p className="text-xs text-gray-500 uppercase tracking-wider">Publicado</p>
-                            </div>
-                        </div>
+                        </section>
 
-                        {/* Description */}
-                        <section className="mb-8">
-                            <h2 className="text-xl font-bold text-gray-900 mb-4">Descrição</h2>
-                            <p className="text-gray-600 leading-relaxed text-lg whitespace-pre-line">
+                        <section className="bg-white p-12 rounded-xl shadow-sm border border-slate-100">
+                            <h2 className="text-2xl font-black text-slate-900 mb-8 flex items-center gap-4">
+                                <span className="h-2 w-10 bg-facil-blue rounded-full"></span>
+                                Descrição do Imóvel
+                            </h2>
+                            <p className="text-slate-600 leading-relaxed text-xl font-medium whitespace-pre-line">
                                 {listing.description}
                             </p>
                         </section>
 
-                        {/* Features */}
-                        <section>
-                            <h2 className="text-xl font-bold text-gray-900 mb-4">Características</h2>
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        <section className="bg-white p-12 rounded-xl shadow-sm border border-slate-100">
+                            <h2 className="text-2xl font-black text-slate-900 mb-10 flex items-center gap-4">
+                                <span className="h-2 w-10 bg-emerald-500 rounded-full"></span>
+                                Comodidades Exclusivas
+                            </h2>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                                 {listing.features.map((feature, index) => (
-                                    <div key={index} className="flex items-center p-5 bg-gray-50 rounded-2xl border border-gray-100/50 group hover:bg-white hover:shadow-lg transition-all duration-300">
-                                        <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 mr-4 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                                            <Check className="w-4 h-4" />
+                                    <div key={index} className="flex items-center p-6 bg-slate-50 rounded-xl border border-slate-100 group hover:bg-facil-blue transition-all duration-500">
+                                        <div className="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center text-facil-blue mr-4 group-hover:rotate-12 transition-transform">
+                                            <Check className="w-5 h-5 stroke-[4px]" />
                                         </div>
-                                        <span className="text-gray-700 font-bold">{feature}</span>
+                                        <span className="text-slate-800 font-black text-sm group-hover:text-white transition-colors uppercase tracking-widest">{feature}</span>
                                     </div>
                                 ))}
                             </div>
                         </section>
                     </div>
-                </div>
 
-                {/* Right Column: Sidebar */}
-                <div className="space-y-6">
-                    {/* Contact Card */}
-                    <div className="bg-white p-8 rounded-3xl shadow-xl border border-blue-50 sticky top-24">
-                        <h3 className="text-lg font-bold text-gray-900 mb-6">Contactar Proprietário</h3>
-
-                        <div className="flex items-center mb-8">
-                            <div className="relative">
-                                <img src={owner.avatar} alt={owner.name} className="h-16 w-16 rounded-full border-2 border-blue-100 p-1" />
-                                {owner.isVerified && (
-                                    <span className="absolute -bottom-1 -right-1 bg-blue-600 text-white rounded-full p-1.5 border-4 border-white shadow-lg">
-                                        <ShieldCheck className="w-4 h-4" />
-                                    </span>
-                                )}
+                    {/* Sidebar Sidebar */}
+                    <div className="space-y-8">
+                        {/* Owner Card Card */}
+                        <div className="bg-white p-10 rounded-xl shadow-2xl border border-slate-50 sticky top-24">
+                            <div className="relative mb-10 text-center">
+                                <div className="inline-block relative">
+                                    <img
+                                        src={owner.avatar}
+                                        alt={owner.name}
+                                        className="h-24 w-24 rounded-xl border-4 border-white shadow-2xl object-cover p-1"
+                                    />
+                                    {owner.isVerified && (
+                                        <span className="absolute -bottom-2 -right-2 bg-facil-blue text-white rounded-lg p-2 border-4 border-white shadow-xl animate-bounce">
+                                            <BadgeCheck className="w-5 h-5" />
+                                        </span>
+                                    )}
+                                </div>
+                                <h3 className="mt-6 text-2xl font-black text-slate-900">{owner.name}</h3>
+                                <div className="flex items-center justify-center gap-2 mt-2">
+                                    <div className="flex text-amber-400">
+                                        {[...Array(5)].map((_, i) => <Star key={i} className={`w-4 h-4 ${i < Math.floor(owner.rating) ? 'fill-current' : ''}`} />)}
+                                    </div>
+                                    <span className="text-xs font-black text-slate-400 uppercase tracking-widest">{owner.reviewCount} Reviews</span>
+                                </div>
                             </div>
-                            <div className="ml-4">
-                                <p className="font-bold text-gray-900 text-lg">{owner.name}</p>
-                                <p className="text-gray-500 text-sm">⭐ {owner.rating} ({owner.reviewCount} avaliações)</p>
-                                {owner.isVerified && (
-                                    <p className="text-blue-600 text-[10px] font-bold uppercase tracking-tighter mt-1">
-                                        Identidade Verificada
-                                    </p>
-                                )}
+
+                            <div className="space-y-4">
+                                <button
+                                    onClick={handleContact}
+                                    className="w-full bg-facil-blue text-white font-black py-6 rounded-xl shadow-2xl shadow-facil-blue/20 hover:bg-blue-700 transition-all flex items-center justify-center gap-3 active:scale-95 translate-y-0 hover:-translate-y-1 animate-icon-bounce"
+                                >
+                                    <MessageSquare className="w-6 h-6" /> Negociar Direto
+                                </button>
+                                <button
+                                    onClick={handleAction}
+                                    className="w-full bg-slate-900 text-white font-black py-6 rounded-xl shadow-2xl shadow-slate-200 hover:bg-slate-800 transition-all flex items-center justify-center gap-3 active:scale-95 translate-y-0 hover:-translate-y-1 animate-icon-pulse"
+                                >
+                                    <FileText className="w-6 h-6" />
+                                    {listing.transactionType === TransactionType.RENT ? 'Arrendar Agora' : 'Comprar Imóvel'}
+                                </button>
+                            </div>
+
+                            <div className="mt-10 pt-10 border-t border-gray-100">
+                                <div className="flex items-center gap-4 text-gray-500 group cursor-help">
+                                    <ShieldCheck className="w-6 h-6 text-emerald-500" />
+                                    <div>
+                                        <p className="text-xs font-black text-gray-900 uppercase tracking-widest">Proteção FACIL</p>
+                                        <p className="text-[10px] font-bold text-gray-400">Contrato digital e fundo de garantia ativo.</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <div className="space-y-3">
-                            <button
-                                onClick={handleContact}
-                                className="w-full bg-blue-600 text-white font-black py-5 rounded-[2rem] shadow-2xl shadow-blue-200 hover:bg-blue-700 transition-all flex items-center justify-center gap-3"
-                            >
-                                <MessageSquare className="w-5 h-5" /> Enviar Mensagem
-                            </button>
-                            <button
-                                onClick={handleAction}
-                                className="w-full bg-white text-blue-600 border-2 border-blue-600 font-black py-5 rounded-[2rem] hover:bg-blue-50 transition-all flex items-center justify-center gap-3"
-                            >
-                                <FileText className="w-5 h-5" />
-                                {listing.transactionType === TransactionType.RENT ? 'Propor Arrendamento' : 'Propor Compra'}
-                            </button>
+                        {/* Security Alert Alert */}
+                        <div className="bg-amber-50 p-10 rounded-xl border border-amber-100 space-y-4 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-8 opacity-5">
+                                <AlertTriangle className="w-24 h-24" />
+                            </div>
+                            <div className="flex items-center gap-3 text-amber-800">
+                                <div className="animate-icon-bounce">
+                                    <AlertTriangle className="w-6 h-6" />
+                                </div>
+                                <h4 className="font-black text-xs uppercase tracking-[0.2em]">Dica de Segurança</h4>
+                            </div>
+                            <p className="text-amber-700 text-sm font-medium leading-relaxed">
+                                A nossa equipa nunca solicita pagamentos via WhatsApp para visitas. Utilize sempre o Dashboard para garantir a sua segurança.
+                            </p>
                         </div>
-
-                        <p className="mt-6 text-xs text-gray-400 text-center">
-                            Ao contactar, concorda com os nossos Termos de Serviço.
-                        </p>
-                    </div>
-
-                    {/* Security Tip */}
-                    <div className="bg-amber-50 p-8 rounded-[2.5rem] border border-amber-100 flex flex-col gap-3">
-                        <div className="flex items-center gap-2 text-amber-800">
-                            <AlertTriangle className="w-5 h-5" />
-                            <h4 className="font-black text-xs uppercase tracking-[0.2em]">Segurança</h4>
-                        </div>
-                        <p className="text-amber-700 text-sm font-medium leading-relaxed">
-                            Nunca envie pagamentos antes de ver o item pessoalmente e assinar o contrato digital na FACIL.
-                        </p>
                     </div>
                 </div>
             </div>
 
-            {/* Chat Modal */}
+            {/* Contract Modal */}
             {isContractOpen && state.user && listing && owner && (
                 <ContractFlow
                     listing={listing}
                     client={state.user}
                     onComplete={() => {
                         setIsContractOpen(false);
-                        alert('Contrato iniciado com sucesso! Verifique seu dashboard.');
                     }}
                     onCancel={() => setIsContractOpen(false)}
                 />

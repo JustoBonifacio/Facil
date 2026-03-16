@@ -6,11 +6,13 @@ export { LoadingSpinner, Skeleton, ListingCardSkeleton, PageSkeleton } from './c
 // ============ LAYOUT COMPONENTS ============
 export { Navbar } from './layout/Navbar';
 export { Footer } from './layout/Footer';
+export { MainLayout } from './layout/MainLayout';
+export { ProtectedRoute } from './layout/ProtectedRoute';
 
 // ============ LISTING COMPONENTS ============
-export { ListingCard } from './listings/ListingCard';
-export { ChatSystem } from './listings/ChatSystem';
-export { ContractFlow } from './listings/ContractFlow';
+export { ListingCard } from '../features/listings/components/ListingCard';
+export { ChatSystem } from '../features/messaging/components/ChatSystem';
+export { ContractFlow } from '../features/listings/components/ContractFlow';
 
 // ============ SEARCH COMPONENTS ============
 export { SearchBar } from './search/SearchBar';

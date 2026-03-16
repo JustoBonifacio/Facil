@@ -1,83 +1,26 @@
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Listing, SearchFilters, ListingCategory, TransactionType } from '../types';
-import { useApp } from '../contexts/AppContext';
+import { useCallback, useMemo } from 'react';
+import { useListings } from '../contexts/ListingsContext';
+import { SearchFilters, ListingCategory } from '../shared/types';
 
 export function useListingsFilter() {
-    const { state } = useApp();
-    const [filters, setFilters] = useState<SearchFilters>({});
-    const [debouncedQuery, setDebouncedQuery] = useState('');
-
-    // Debounce search query
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setDebouncedQuery(filters.query || '');
-        }, 300);
-        return () => clearTimeout(timer);
-    }, [filters.query]);
-
-    const filteredListings = useMemo(() => {
-        let results = [...state.listings];
-
-        if (debouncedQuery) {
-            const q = debouncedQuery.toLowerCase();
-            results = results.filter(l =>
-                l.title.toLowerCase().includes(q) ||
-                l.description.toLowerCase().includes(q) ||
-                l.location.city.toLowerCase().includes(q) ||
-                l.location.neighborhood.toLowerCase().includes(q)
-            );
-        }
-
-        if (filters.category) {
-            results = results.filter(l => l.category === filters.category);
-        }
-
-        if (filters.transactionType) {
-            results = results.filter(l => l.transactionType === filters.transactionType);
-        }
-
-        if (filters.minPrice !== undefined) {
-            results = results.filter(l => l.price >= filters.minPrice!);
-        }
-
-        if (filters.maxPrice !== undefined) {
-            results = results.filter(l => l.price <= filters.maxPrice!);
-        }
-
-        if (filters.city) {
-            results = results.filter(l => l.location.city === filters.city);
-        }
-
-        // Novos filtros
-        if (filters.typology) {
-            results = results.filter(l => l.features?.some(f => f.includes(filters.typology!)));
-        }
-
-        if (filters.isFurnished !== undefined) {
-            results = results.filter(l => l.features?.some(f =>
-                filters.isFurnished ? f.toLowerCase().includes('mobilado') : f.toLowerCase().includes('sem mobília')
-            ));
-        }
-
-        return results;
-    }, [state.listings, debouncedQuery, filters]);
+    const { listings, filters, actions, isLoading } = useListings();
 
     const setQuery = useCallback((query: string) => {
-        setFilters(prev => ({ ...prev, query }));
-    }, []);
+        actions.setFilters({ ...filters, query });
+    }, [actions, filters]);
 
     const updateFilters = useCallback((newFilters: SearchFilters) => {
-        setFilters(prev => ({ ...prev, ...newFilters }));
-    }, []);
+        actions.setFilters({ ...filters, ...newFilters });
+    }, [actions, filters]);
 
     const setCategory = useCallback((category: ListingCategory | undefined) => {
-        setFilters(prev => ({ ...prev, category }));
-    }, []);
+        actions.setFilters({ ...filters, category });
+    }, [actions, filters]);
 
     const clearFilters = useCallback(() => {
-        setFilters({});
-    }, []);
+        actions.setFilters({});
+    }, [actions]);
 
     const activeFiltersCount = useMemo(() => {
         let count = 0;
@@ -88,14 +31,15 @@ export function useListingsFilter() {
     }, [filters]);
 
     return {
-        listings: filteredListings,
+        listings,
         filters,
+        isLoading,
         setQuery,
         setCategory,
         updateFilters,
         clearFilters,
         activeFiltersCount,
-        totalCount: state.listings.length,
-        filteredCount: filteredListings.length,
+        totalCount: listings.length, // Isto pode precisar de ajuste se for necessário o total real sem filtros
+        filteredCount: listings.length,
     };
 }
